@@ -3,7 +3,7 @@ The below description is temporary. I will prepare whole pack which helps to und
 
 # Background
 The Model was built for the trade company where I work, due to two reasons:
-1. Check how many hours every Central European (CE) stores need, depends on many drivers/profiles we use in detail level, as I use data in product number (barecode) level for every store (> 850 stores)
+1. Check how many hours every Central European (CE) stores need, depends on many drivers/profiles we use in detail level, as I use data in product number (TPN) level for every store (> 850 stores)
 2. Calculate what would be a financial effect for many ideas which might be implement. Basicaly it can help to make a proper decision
 
 # Scripts Description 
