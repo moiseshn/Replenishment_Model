@@ -3,8 +3,27 @@ The below description is temporary. I will prepare whole pack which helps to und
 
 # Background
 The Model was built for the trade company where I work, due to two reasons:
-1. Check how many hours every Central European (CE) stores need, depends on many drivers/profiles we use in detail level, as I use data in product number (TPN) level for every store (> 850 stores)
-2. Calculate what would be a financial effect for many ideas which might be implemented. Basically it can help to make a proper decision
+1. Check how many hours every Central European (CE) stores need to cover all activities that must be done in commercial departments, such as:
+- Dry Grocery
+- Health and Beauty
+- Beer Wine Spirits
+- Pre-packed Dairy
+- Pre-packed Deli
+- Frozen
+- Produce
+- General Merchandise
+- Newspapers
+
+To calculate proper hours I use data in Product Number (TPN) level for each store (> 850 stores) in the company.
+The required hours depends on many product features, like e.g:
+- Replenishment Type (tray pack, unit, hook etc.)
+- Product Weigh
+- Shelf Capacity
+- Sold Units
+- Stock Unit
+- and much more...
+
+2. Calculate what would be a financial effect for many ideas which might be implemented. Basically it can help to make a proper (more beneficial) decisions.
 
 # Scripts Description 
 ## Replenishment Model.py:
