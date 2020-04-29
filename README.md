@@ -14,7 +14,7 @@ The Model was built for the trade company where I work, due to two reasons:
 - General Merchandise
 - Newspapers
 
-To calculate proper hours I use data in Product Number (TPN) level for each store (> 850 stores) in the company.
+To calculate proper hours I use Big Data in Product Number (TPN) level for each store (> 850 stores) in the company.
 The required hours depends on many product features, like e.g:
 - Replenishment Type (tray pack, unit, hook etc.)
 - Product Weigh
