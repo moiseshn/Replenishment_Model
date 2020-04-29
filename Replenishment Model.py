@@ -86,77 +86,95 @@ if STORE_INPUTS_FUNC == True:
     time_start = CurrentTime()
     store_inputs = rmf.StoreInputsCreator(directory)
     if STORE_INPUTS_FUNC_SAVE == True:
-        store_inputs.to_csv(directory/'Model_Datasets/stores_inputs_'+version_saved+'.csv', index=False)
+        file_name = 'Model_Datasets/stores_inputs_'+version_saved+'.csv'
+        store_inputs.to_csv(directory/file_name, index=False)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Stores Inputs has been created and saved. Executed Time (sec): " if STORE_INPUTS_FUNC_SAVE == True else "Stores Inputs has been created and not saved. Executed Time (sec): ")
 if VOLUMES_FUNC == True:
     time_start = CurrentTime()
     volumes = rmf.VolumesCreator(directory,items_f,cases_f,lines_f,dataset_inputs_f)
     if VOLUMES_FUNC_SAVE == True:
-        volumes.to_excel(directory/'Model_Datasets/Volumes_2019_'+version_saved+'.xlsx', index=False)
+        file_name = 'Model_Datasets/Volumes_2019_'+version_saved+'.xlsx'
+        volumes.to_excel(directory/file_name, index=False)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Volumes_2019 has been created and saved. Executed Time (sec): " if VOLUMES_FUNC_SAVE == True else "Volumes_2019 has been created and not saved. Executed Time (sec): ")
 if DATASET_TPN_FUNC == True:
     time_start = CurrentTime()
     dataset_tpn = rmf.ReplDatasetTpn(directory,dataset_inputs_f,planogram_f,stock_f,ops_dev_f,items_sold_f)
     if DATASET_TPN_FUNC_SAVE == True:
-        dataset_tpn.to_csv(directory / 'Model_Datasets/Repl_Dataset_2019_'+version_saved+'.csv', index=False)
+        file_name = 'Model_Datasets/Repl_Dataset_2019_'+version_saved+'.csv'
+        dataset_tpn.to_csv(directory / file_name, index=False)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Replenishment Dataset TPN table has been created and saved. Executed Time (sec): " if DATASET_TPN_FUNC_SAVE == True else "Replenishment Dataset TPN table has been created and not saved. Executed Time (sec): ")
 if PARAM_REPLENISHMENT_FUNC == True:
     time_start = CurrentTime()
     Parameters_Repl = rmf.ReplenishmentParameters(directory,repl_dataset_f,SOLD_UNIT_DAYS,BACKSTOCK_TARGET,CASE_CAP_TARGET,dataset_inputs_f,pallet_capacity_f,volumes_f)
     if PARAM_REPLENISHMENT_FUNC_SAVE == True:
-        Parameters_Repl.to_csv(directory / 'Parameters_Outputs/final_parameters_'+version_saved+'.csv', index=False)
+        file_name = 'Parameters_Outputs/final_parameters_'+version_saved+'.csv'
+        Parameters_Repl.to_csv(directory / file_name, index=False)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Replenishment Parameters table has been created and saved. Executed Time (sec): " if PARAM_REPLENISHMENT_FUNC_SAVE == True else "Replenishment Parameters table has been created and not saved. Executed Time (sec): ")
 if PARAM_PRODUCE_FUNC == True:
     time_start = CurrentTime()
     Parameters_Produce = rmf.ProduceParameters(directory,repl_dataset_f,dataset_inputs_f,SOLD_UNIT_DAYS,MODULE_CRATES,TABLE_CRATES,volumes_f,SALES_CYCLE,FULFILL_TARGET,pallet_capacity_f)
     if PARAM_PRODUCE_FUNC_SAVE == True:
-        Parameters_Produce.to_csv(directory / 'Parameters_Outputs/produce_parameters_'+version_saved+'.csv', index=False)
+        file_name = 'Parameters_Outputs/produce_parameters_'+version_saved+'.csv'
+        Parameters_Produce.to_csv(directory / file_name, index=False)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Produce Parameters has been created and saved. Executed Time (sec): " if PARAM_PRODUCE_FUNC_SAVE == True else "Produce Parameters has been created and not saved. Executed Time (sec): ")
-if PARAM_RTC_FUNC == True: # dodaj odtąd opcję z czasem i textem jak wyżej: CalcTime
+if PARAM_RTC_FUNC == True:
+    time_start = CurrentTime()
     Parameters_Rtc_Waste = rmf.RtcParameters(directory,repl_dataset_f,losses_f,LOSS_UNIT_DAYS)
-    CurrentTime("RTC Parameters are ready")
     if PARAM_RTC_FUNC_SAVE == True:
-        Parameters_Rtc_Waste.to_csv(directory / 'Parameters_Outputs/Waste_RTC_',version_saved,'.csv', index=False)
-        CurrentTime("RTC Parameters table has been saved")
+        file_name = 'Parameters_Outputs/Waste_RTC_',version_saved,'.csv'
+        Parameters_Rtc_Waste.to_csv(directory / file_name, index=False)
+    time_stop = CurrentTime()
+    CalcTime(time_start,time_stop,"RTC Parameters has been created and saved. Executed Time (sec): " if PARAM_RTC_FUNC_SAVE == True else "RTC Parameters has been created and not saved. Executed Time (sec): ")
 if DRIVERS_REPLENISHMENT_FUNC == True:
+    time_start = CurrentTime()
     Repl_Drivers = rmf.ReplenishmentDrivers(directory,final_parameters_f,dataset_inputs_f,RC_CAPACITY)
-    CurrentTime("Replenishment Drivers are ready")
     if DRIVERS_REPLENISHMENT_FUNC_SAVE == True:
-        Repl_Drivers.to_csv(directory / 'Drivers_Replenishment_'+version_saved+'.csv', index=False)
-        CurrentTime("Replenishment Drivers table has been saved")  
+        file_name = 'Drivers_Replenishment_'+version_saved+'.csv'
+        Repl_Drivers.to_csv(directory / file_name, index=False)
+    time_stop = CurrentTime()
+    CalcTime(time_start,time_stop,"Replenishment Drivers has been created and saved. Executed Time (sec): " if DRIVERS_REPLENISHMENT_FUNC_SAVE == True else "Replenishment Drivers has been created and not saved. Executed Time (sec): ")
 if DRIVERS_PRODUCE_FUNC == True:
+    time_start = CurrentTime()
     Produce_Drivers = rmf.ProduceDrivers(directory,produce_parameters_f,RC_DELIVERY,RC_VS_PAL_CAPACITY)
-    CurrentTime("Produce Drivers are ready")
     if DRIVERS_PRODUCE_FUNC_SAVE == True:
-        Produce_Drivers.to_csv(directory / 'Drivers_Produce_'+version_saved+'.csv', index=False)
-        CurrentTime("Produce Drivers table has been saved")  
+        file_name = 'Drivers_Produce_'+version_saved+'.csv'
+        Produce_Drivers.to_csv(directory / file_name, index=False)
+    time_stop = CurrentTime()
+    CalcTime(time_start,time_stop,"Produce Drivers has been created and saved. Executed Time (sec): " if DRIVERS_PRODUCE_FUNC_SAVE == True else "Produce Drivers has been created and not saved. Executed Time (sec): ")
 if DRIVERS_RTC_FUNC == True:
+    time_start = CurrentTime()
     Rtc_Drivers = rmf.RtcDrivers(directory,rtc_waste_f,dataset_inputs_f)
-    CurrentTime("RTC table is ready")
     if DRIVERS_RTC_FUNC_SAVE == True:
-        Rtc_Drivers.to_csv(directory / 'Drivers_RTC_'+version_saved+'.csv', index=False)
-        CurrentTime("RTC table has been saved")  
+        file_name = 'Drivers_RTC_'+version_saved+'.csv'
+        Rtc_Drivers.to_csv(directory / file_name, index=False)
+    time_stop = CurrentTime()
+    CalcTime(time_start,time_stop,"RTC Drivers has been created and saved. Executed Time (sec): " if DRIVERS_RTC_FUNC_SAVE == True else "RTC Drivers has been created and not saved. Executed Time (sec): ")
 if DRIVERS_FINAL_FUNC == True:
     Final_Drivers = rmf.FinalizingDrivers(directory,dataset_inputs_f,produce_parameters_f,Repl_Drivers,Produce_Drivers,Rtc_Drivers)
-    CurrentTime("Final Drivers table is ready")
     if DRIVERS_FINAL_FUNC_SAVE == True:
-        Final_Drivers.to_csv(directory / 'Drivers_Final_'+version_saved+'.csv', index=False)
-        CurrentTime("Final Drivers table has been saved")   
+        file_name = 'Drivers_Final_'+version_saved+'.csv'
+        Final_Drivers.to_csv(directory / file_name, index=False)
+    time_stop = CurrentTime()
+    CalcTime(time_start,time_stop,"Final Drivers has been created and saved. Executed Time (sec): " if DRIVERS_FINAL_FUNC_SAVE == True else "Final Drivers has been created and not saved. Executed Time (sec): ")
 if TIME_VALUES_FUNC == True:
+    time_start = CurrentTime()
     Time_Value = rmf.TimeValues(directory,dataset_inputs_f,most_f,Final_Drivers)
     Time_Value = rmf.HoursCalculation(directory,dataset_inputs_f,Time_Value,REX_ALLOWANCE) # the same table like above but with hours (overwritten)
-    CurrentTime("Time Values table with hours is ready")
     if TIME_VALUES_FUNC_SAVE == True:
-        Time_Value.to_csv(directory / 'Time_Value_'+version_saved+'.csv', index=False)
-        CurrentTime("Time Values table has been saved")     
+        file_name = 'Time_Value_'+version_saved+'.csv'
+        Time_Value.to_csv(directory / file_name, index=False)
+    time_stop = CurrentTime()
+    CalcTime(time_start,time_stop,"Time Values has been created and saved. Executed Time (sec): " if TIME_VALUES_FUNC_SAVE == True else "Time Values has been created and not saved. Executed Time (sec): ")    
 if MODEL_HOURS_FUNC == True:
+    time_start = CurrentTime()
     Model_Hours = rmf.ModelHours(directory,Time_Value)
-    CurrentTime("Model Hours table is ready")
     if MODEL_HOURS_FUNC_SAVE == True:
-        Model_Hours.to_csv(directory / 'Model_Outputs_'+version_saved+'.csv', index=False)
-        CurrentTime("Model Hours table has been saved") 
+        file_name = 'Model_Outputs_'+version_saved+'.csv'
+        Model_Hours.to_csv(directory / file_name, index=False)
+    time_stop = CurrentTime()
+    CalcTime(time_start,time_stop,"Model Hours has been created and saved. Executed Time (sec): " if MODEL_HOURS_FUNC_SAVE == True else "Model Hours has been created and not saved. Executed Time (sec): ")
