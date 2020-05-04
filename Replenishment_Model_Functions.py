@@ -881,7 +881,26 @@ def OutputsComparison(folder,times,current_outputs):
     return print('\nDifferences between the last and current version:\n\n',hrs_comparison[['Country','Division','diff_hours','diff_%']],'\n')
 
 def OperationProductivityBasics(times,drivers):
-    opb_dep = times.groupby(['Country','Store','Format','Dep','Division']).agg({'hours':'sum','Yearly GPB':'sum'}).reset_index()
-    opb_dep = opb_dep.merge(drivers, on=['Store','Dep'],how='inner')
-    opb_div_df = opb_dep.groupby(['Country','Store','Format','Division']).sum().reset_index()
-    return opb_dep,opb_div_df
+    sales_df = drivers[['Store','Dep','sales']].copy()
+    opb = times.groupby(['Country','Store','Format','Dep','Division','V_F']).agg({'hours':'sum','Yearly GPB':'sum'}).sort_values(['Store','Division']).reset_index()
+    opb_fix = opb[opb.V_F=='F'].rename(columns={'hours':'Fix Hours','Yearly GPB':'Yearly_GPB_fix'})
+    opb_fix.drop('V_F',axis=1,inplace=True)
+    opb_var = opb[opb.V_F=='V'].rename(columns={'hours':'Variable Hours','Yearly GPB':'Yearly_GPB_var'})
+    opb_var.drop('V_F',axis=1,inplace=True)
+    opb_dep = opb_fix.merge(opb_var,on=['Country','Store','Format','Dep','Division'], how='inner')
+    opb_dep['Total Hours'] = opb_dep['Fix Hours'] + opb_dep['Variable Hours']
+    opb_dep['Yearly GBP'] = opb_dep.Yearly_GPB_fix + opb_dep.Yearly_GPB_var
+    opb_dep.drop(['Yearly_GPB_fix','Yearly_GPB_var'], axis=1, inplace=True)
+    opb_dep = opb_dep.merge(sales_df,on=['Store','Dep'],how='inner')
+    
+    opb_div = opb_dep.groupby(['Country','Store','Format','Division']).agg({'Fix Hours':'sum','Variable Hours':'sum','Total Hours':'sum','Yearly GBP':'sum','sales':'sum'}).reset_index()
+    opb_div['Variable Currency'] = opb_div['sales'] / opb_div['Total Hours']
+    
+    opb_dep.drop('sales', axis=1, inplace=True)
+    opb_div.drop('sales', axis=1, inplace=True)
+    
+    insight = times.groupby(['Country','Store','Format','Division','Activity_Group','Suboperation'])['hours'].sum().reset_index()
+    insight = insight[insight.hours>0]
+    final_drivers = drivers.melt(id_vars=['Store','Dep'], var_name=['Driver_Names'], value_name='Driver_Values').sort_values(['Store','Dep'])
+    final_drivers = final_drivers[final_drivers.Driver_Values>0] # remember that 0 means 'No' in the profiles
+    return opb_dep,opb_div,insight,final_drivers

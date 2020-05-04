@@ -73,39 +73,41 @@ PARAM_RTC_FUNC = False
 STORE_INPUTS_FUNC = False
 VOLUMES_FUNC = False
 DATASET_TPN_FUNC = False
-DATASET_TPN_FUNC_SAVE = False
 # Save 
-STORE_INPUTS_FUNC_SAVE = False
-VOLUMES_FUNC_SAVE = False
-DRIVERS_FINAL_FUNC_SAVE = False
-OPB_DEP = False
-OPB_DIV = False
+DATASET_TPN_SAVE = False
+STORE_INPUTS_SAVE = False
+VOLUMES_SAVE = False
+EXCEL_DRIVERS_SAVE = False
+OPB_DEP_SAVE = True
+OPB_DIV_SAVE = True
+INSIGHT_SAVE = True
+MODEL_DRIVERS_SAVE = True
 
 
 if STORE_INPUTS_FUNC == True:
     time_start = CurrentTime()
     store_inputs = rmf.StoreInputsCreator(directory)
-    if STORE_INPUTS_FUNC_SAVE == True:
+    if STORE_INPUTS_SAVE == True:
         file_name = 'Model_Datasets/stores_inputs_'+version_saved+'.csv'
         store_inputs.to_csv(directory/file_name, index=False)
     time_stop = CurrentTime()
-    CalcTime(time_start,time_stop,"Stores Inputs has been created and saved. Executed Time (sec): " if STORE_INPUTS_FUNC_SAVE == True else "Stores Inputs has been created and not saved. Executed Time (sec): ")
+    CalcTime(time_start,time_stop,"Stores Inputs has been created and saved. Executed Time (sec): " if STORE_INPUTS_SAVE == True else "Stores Inputs has been created and not saved. Executed Time (sec): ")
 if VOLUMES_FUNC == True:
     time_start = CurrentTime()
     volumes = rmf.VolumesCreator(directory,items_f,cases_f,lines_f,csv_inputs_f)
-    if VOLUMES_FUNC_SAVE == True:
+    if VOLUMES_SAVE == True:
         file_name = 'Model_Datasets/Volumes_2019_'+version_saved+'.xlsx'
         volumes.to_excel(directory/file_name, index=False)
     time_stop = CurrentTime()
-    CalcTime(time_start,time_stop,"Volumes_2019 has been created and saved. Executed Time (sec): " if VOLUMES_FUNC_SAVE == True else "Volumes_2019 has been created and not saved. Executed Time (sec): ")
+    CalcTime(time_start,time_stop,"Volumes_2019 has been created and saved. Executed Time (sec): " if VOLUMES_SAVE == True else "Volumes_2019 has been created and not saved. Executed Time (sec): ")
 if DATASET_TPN_FUNC == True:
     time_start = CurrentTime()
     dataset_tpn = rmf.ReplDatasetTpn(directory,csv_inputs_f,planogram_f,stock_f,ops_dev_f,items_sold_f)
-    if DATASET_TPN_FUNC_SAVE == True:
+    if DATASET_TPN_SAVE == True:
         file_name = 'Model_Datasets/Repl_Dataset_2019_'+version_saved+'.csv'
         dataset_tpn.to_csv(directory / file_name, index=False)
     time_stop = CurrentTime()
-    CalcTime(time_start,time_stop,"Replenishment Dataset TPN table has been created and saved. Executed Time (sec): " if DATASET_TPN_FUNC_SAVE == True else "Replenishment Dataset TPN table has been created and not saved. Executed Time (sec): ")
+    CalcTime(time_start,time_stop,"Replenishment Dataset TPN table has been created and saved. Executed Time (sec): " if DATASET_TPN_SAVE == True else "Replenishment Dataset TPN table has been created and not saved. Executed Time (sec): ")
 if RUN_MODEL == True:
     time_start = CurrentTime()
     if PARAM_OPEN_DATASET == True:
@@ -127,20 +129,34 @@ if RUN_MODEL == True:
     Rtc_Drivers = rmf.RtcDrivers(directory,Parameters_Rtc_Waste,csv_inputs_f)
     
     # Finalizing Drivers
-    Final_Drivers = rmf.FinalizingDrivers(directory,csv_inputs_f,produce_parameters_f,Repl_Drivers,Produce_Drivers,Rtc_Drivers)
-    if DRIVERS_FINAL_FUNC_SAVE == True:
-        file_name = 'Drivers_Final_'+version_saved+'.csv'
-        Final_Drivers.to_csv(directory / file_name, index=False)
+    Final_Drivers_xlsx = rmf.FinalizingDrivers(directory,csv_inputs_f,produce_parameters_f,Repl_Drivers,Produce_Drivers,Rtc_Drivers)
+    if EXCEL_DRIVERS_SAVE == True:
+        file_name = 'Drivers_Final_'+version_saved+'.xlsx'
+        Final_Drivers_xlsx.to_excel(directory / file_name, index=False)
     time_stop = CurrentTime()
-    CalcTime(time_start,time_stop,"Replenishment Drivers Dataframe is ready and saved. Executed Time (sec): " if DRIVERS_FINAL_FUNC_SAVE == True else "Replenishment Drivers Dataframe is ready and not saved. Executed Time (sec): ")    
+    CalcTime(time_start,time_stop,"Replenishment Drivers Dataframe is ready and saved. Executed Time (sec): " if EXCEL_DRIVERS_SAVE == True else "Replenishment Drivers Dataframe is ready and not saved. Executed Time (sec): ")    
     
     # Combining Times, Drivers and calc hours per activity
     time_start = CurrentTime()
-    Time_Value = rmf.TimeValues(directory,csv_inputs_f,most_f,Final_Drivers)
+    Time_Value = rmf.TimeValues(directory,csv_inputs_f,most_f,Final_Drivers_xlsx)
     Time_Value = rmf.HoursCalculation(directory,csv_inputs_f,Time_Value,REX_ALLOWANCE) # the same table like above but with hours (overwritten)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Time Values Dataframe is ready. Executed Time (sec): ")
     
     # Summarizing Hours
     rmf.OutputsComparison(directory,Time_Value,act_model_outputs)
-    opb_dep,opb_div = rmf.OperationProductivityBasics(Time_Value,Final_Drivers)
+    opb_dep,opb_div,insight,final_drivers = rmf.OperationProductivityBasics(Time_Value,Final_Drivers_xlsx)
+    
+    # Saving Tables from the model
+    if OPB_DEP_SAVE == True:
+        file_name = 'Model_Outputs/OPB_DEP_'+version_saved+'.xlsx'
+        opb_dep.to_excel(directory / file_name, index=False)
+    if OPB_DIV_SAVE == True:
+        file_name = 'Model_Outputs/OPB_DIV_'+version_saved+'.xlsx'
+        opb_div.to_excel(directory / file_name, index=False)
+    if INSIGHT_SAVE == True:
+        file_name = 'Model_Outputs/INSIGHT_'+version_saved+'.csv'
+        insight.to_csv(directory / file_name, index=False)
+    if MODEL_DRIVERS_SAVE == True:
+        file_name = 'Model_Outputs/DRIVERS_'+version_saved+'.csv'
+        final_drivers.to_csv(directory / file_name, index=False)
