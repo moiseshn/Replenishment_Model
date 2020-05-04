@@ -869,19 +869,19 @@ def HoursCalculation(folder,inputs,df_times,RelaxationAllowance):
     hours_df['Yearly GPB'] = hours_df.GBP_rates*hours_df.hours*52
     return hours_df
 
-def ModelHours(folder,model_hours):    
-    new_hrs = model_hours.groupby(['Country','Division']).agg({'hours':'sum','Yearly GPB':'sum'}).reset_index()
+def OutputsComparison(folder,times,current_outputs):    
+    new_hrs = times.groupby(['Country','Division']).agg({'hours':'sum','Yearly GPB':'sum'}).reset_index()
     new_hrs.rename(columns={'hours':'New_Hours','Yearly GPB':'New_Yearly_GBP'},inplace=True)
-    previous_hrs = pd.read_excel(folder/'Model_Outputs/Model_Outouts_actual.xlsx')
+    previous_hrs = pd.read_excel(folder/current_outputs)
     previous_hrs = previous_hrs.groupby(['Country','Division']).agg({'hours':'sum','Yearly GPB':'sum'}).reset_index()
     hrs_comparison = previous_hrs.merge(new_hrs, on=['Country','Division'],how='left')
-    # cols = ['hours','Yearly GPB','New_Hours','New_Yearly_GBP']
-    # for col in cols:
-    #     hrs_comparison[col] = hrs_comparison[col].apply(lambda x: round(x))
     hrs_comparison['diff_hours'] = hrs_comparison.New_Hours - hrs_comparison.hours
     hrs_comparison['diff_%'] = ((hrs_comparison.diff_hours / hrs_comparison.hours) * 100)
     pd.options.display.float_format = '{:.1f}'.format
-    
-    # model_hours = model_hours.groupby(['Country', 'Store', 'Format', 'Dep','Division']).agg({'hours':'sum','Yearly GPB':'sum'}).reset_index() # What If - Agi 16.04
-    # model_hours.to_excel(directory/'Model_Outputs/Model_Outouts_refactor.xlsx',index=False)
     return print('\nDifferences between the last and current version:\n\n',hrs_comparison[['Country','Division','diff_hours','diff_%']],'\n')
+
+def OperationProductivityBasics(times,drivers):
+    opb_dep = times.groupby(['Country','Store','Format','Dep','Division']).agg({'hours':'sum','Yearly GPB':'sum'}).reset_index()
+    opb_dep = opb_dep.merge(drivers, on=['Store','Dep'],how='inner')
+    opb_div_df = opb_dep.groupby(['Country','Store','Format','Division']).sum().reset_index()
+    return opb_dep,opb_div_df

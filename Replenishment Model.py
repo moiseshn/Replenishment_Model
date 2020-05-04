@@ -37,6 +37,7 @@ stock_f = 'Model_Datasets/Stock_X_2019.zip' # 30.09-27.10
 losses_f = 'Model_Datasets/Losses_X_2019.csv' # 30.09-27.10
 ops_dev_f = 'Model_Datasets/OpsDev_XI_2019.zip'
 most_f = 'Model_Datasets/MOST_Py.xlsx'
+act_model_outputs = 'Model_Outputs/Model_Outouts_actual.xlsx'
 
 final_parameters_f = 'Parameters_Outputs/final_parameters_'+version_base+'.csv'
 produce_parameters_f = 'Parameters_Outputs/produce_parameters_'+version_base+'.csv'
@@ -64,9 +65,9 @@ FULFILL_TARGET = 0.6
 
 # Model
 RUN_MODEL = True
-PARAM_OPEN_DATASET = True # if any of the below PARAM bool == True, True, False
+PARAM_OPEN_DATASET = False # if any of the below PARAM bool == True, True, False
 PARAM_REPLENISHMENT_FUNC = False # if we want to calc it based on some new inputs: True else False
-PARAM_PRODUCE_FUNC = True
+PARAM_PRODUCE_FUNC = False
 PARAM_RTC_FUNC = False
 # Datasets
 STORE_INPUTS_FUNC = False
@@ -77,7 +78,8 @@ DATASET_TPN_FUNC_SAVE = False
 STORE_INPUTS_FUNC_SAVE = False
 VOLUMES_FUNC_SAVE = False
 DRIVERS_FINAL_FUNC_SAVE = False
-MODEL_HOURS_FUNC_SAVE = False
+OPB_DEP = False
+OPB_DIV = False
 
 
 if STORE_INPUTS_FUNC == True:
@@ -140,10 +142,5 @@ if RUN_MODEL == True:
     CalcTime(time_start,time_stop,"Time Values Dataframe is ready. Executed Time (sec): ")
     
     # Summarizing Hours
-    time_start = CurrentTime()
-    Model_Hours = rmf.ModelHours(directory,Time_Value)
-    if MODEL_HOURS_FUNC_SAVE == True:
-        file_name = 'Model_Outputs_'+version_saved+'.csv'
-        Model_Hours.to_csv(directory / file_name, index=False)  
-    time_stop = CurrentTime()
-    CalcTime(time_start,time_stop,"Model Hours are ready and saved. Executed Time (sec): " if MODEL_HOURS_FUNC_SAVE == True else "Model Hours are ready and not saved. Executed Time (sec): ")
+    rmf.OutputsComparison(directory,Time_Value,act_model_outputs)
+    opb_dep,opb_div = rmf.OperationProductivityBasics(Time_Value,Final_Drivers)
