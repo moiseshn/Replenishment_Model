@@ -135,7 +135,7 @@ def ParamCalc_b(tbl_name,a, b):
     tbl_name[a] = np.where(tbl_name[b]==1,tbl_name.s_ratio,0)
     tbl_name.drop([b],axis=1, inplace=True)
 
-def ReplenishmentParameters(folder,repl_dataset_f,sold_units_days,backstock_target,case_capacity_target,inputs,pallet_capacity_f,volumes_f):
+def ReplenishmentParameters(folder,Repl_Dataset,sold_units_days,backstock_target,case_capacity_target,inputs,pallet_capacity_f,volumes_f):
     store_inputs = pd.read_csv(folder / inputs)
     store_inputs = store_inputs.rename(columns={'Store':'store','Pmg':'pmg'}) # temporary
     store_inputs = store_inputs[['store', 'pmg']].drop_duplicates()
@@ -151,7 +151,6 @@ def ReplenishmentParameters(folder,repl_dataset_f,sold_units_days,backstock_targ
     sales = sales[sales.sales_excl_vat > 0]
     pallet_capacity_df = pd.read_csv(folder / pallet_capacity_f)
     pallet_capacity_df = pallet_capacity_df[['store','pmg','Pallet_Capacity']]
-    Repl_Dataset = pd.read_csv(folder/repl_dataset_f,compression='zip')
     dataset = Repl_Dataset[Repl_Dataset.capacity>0].copy() # temporary. Next time backstock calc based on this but rest of drivers calc based on full table
     dataset = dataset.drop(dataset[dataset.pmg=='HDL01'].index) # Remove newspapers from planogram
     dataset = dataset.drop_duplicates()
@@ -292,7 +291,7 @@ def ReplenishmentParameters(folder,repl_dataset_f,sold_units_days,backstock_targ
     final_parameters.rename(columns={'store': 'Store', 'pmg': 'Pmg', 'dep': 'Dep'},inplace=True)
     return final_parameters
 
-def ProduceParameters(folder,repl_dataset_f,inputs,sold_units_days,crates_per_module,crates_per_table,volumes_f,sales_cycle,fulfill_target,pallet_capacity_f):
+def ProduceParameters(folder,Repl_Dataset,inputs,sold_units_days,crates_per_module,crates_per_table,volumes_f,sales_cycle,fulfill_target,pallet_capacity_f):
 
     volumes_table = pd.read_excel(folder / volumes_f, sheet_name='Sheet1', usecols=['store', 'pmg', 'cases_delivered', 'product_stocked', 'items_sold', 'sales_excl_vat']) # Volumes < -- probably we should keep it above
     volumes_table = volumes_table.replace(np.nan, 0)
@@ -306,7 +305,6 @@ def ProduceParameters(folder,repl_dataset_f,inputs,sold_units_days,crates_per_mo
     sales = sales[sales.sales_excl_vat > 0]
     pallet_capacity_df = pd.read_csv(folder / pallet_capacity_f)
     pallet_capacity_df = pallet_capacity_df[['store','pmg','Pallet_Capacity']]
-    Repl_Dataset = pd.read_csv(folder/repl_dataset_f,compression='zip')
     xls = pd.ExcelFile(folder / inputs)
     produce_df = pd.read_excel(xls, 'produce_dataframe')
     produce_df = produce_df.rename(columns={'Pmg':'pmg'}) # temporary
@@ -443,9 +441,8 @@ def ProduceParameters(folder,repl_dataset_f,inputs,sold_units_days,crates_per_mo
     produce_parameters.rename(columns={'store': 'Store', 'pmg': 'Pmg'},inplace=True)
     return produce_parameters
 
-def RtcParameters(folder,repl_dataset_f,losses_f,losses_units_days):
-    mstr = pd.read_csv(folder/repl_dataset_f,compression='zip')
-    mstr = mstr[['store', 'tpnb', 'unit_type']].copy()
+def RtcParameters(folder,Repl_Dataset,losses_f,losses_units_days):
+    mstr = Repl_Dataset[['store', 'tpnb', 'unit_type']].copy()
     waste_rtc = pd.read_csv(folder / losses_f, sep=',')
     waste_rtc.columns = waste_rtc.columns.str.replace('mbo_bgt_losses.', '')
     waste_rtc['amount'] = waste_rtc.amount.abs()
@@ -463,13 +460,12 @@ def RtcParameters(folder,repl_dataset_f,losses_f,losses_units_days):
     return waste_rtc
 
 # Drivers and Hours Calculation
-def ReplenishmentDrivers(folder,parameters,inputs,RC_Capacity_Ratio):
-    final_parameters = pd.read_csv(folder / parameters)
+def ReplenishmentDrivers(folder,parameters_df,inputs,RC_Capacity_Ratio):
     store_inputs = pd.read_csv(folder / inputs)
     stores_df = store_inputs[['Country','Store','Format','Store Name','Plan Size']].drop_duplicates()
     dep_df = store_inputs[['Store','Dep','Racking','Pallets Delivery Ratio','Backstock Pallet Ratio']].drop_duplicates()
     pmg_df = store_inputs[['Country','Format','Pmg','taggingPerc','presortPerc','prack','AdditionalMovement','PalletDelivery']].drop_duplicates()
-    Drivers = final_parameters.copy()
+    Drivers = parameters_df.copy()
     Drivers = Drivers.merge(stores_df, on=['Store'], how='inner')
     Drivers = Drivers.merge(pmg_df, on=['Country', 'Format', 'Pmg'], how='left')
     Drivers = Drivers.merge(dep_df, on=['Store','Dep'], how='left')
@@ -538,8 +534,8 @@ def ReplenishmentDrivers(folder,parameters,inputs,RC_Capacity_Ratio):
     Drivers['Replenished Rollcages'] = np.where(Drivers.Pmg=='HDL01', 5, Drivers['Replenished Rollcages'])
     return Drivers
 
-def ProduceDrivers(folder,parameters,RC_delivery_ratio,RC_vs_Pallet_capacity):
-    produce_parameters = pd.read_csv(folder / parameters)
+def ProduceDrivers(folder,parameters_df,RC_delivery_ratio,RC_vs_Pallet_capacity):
+    produce_parameters = parameters_df.copy()
     produce_driveres = produce_parameters.groupby(['Store','Pmg']).cases_delivered.sum().reset_index()
 
     x = produce_parameters.groupby(['Store','Pmg']).product_stocked.sum().reset_index()
@@ -658,9 +654,9 @@ def ProduceDrivers(folder,parameters,RC_delivery_ratio,RC_vs_Pallet_capacity):
     produce_driveres = produce_driveres.merge(x, on=['Store', 'Pmg'], how='left')
     return produce_driveres
 
-def RtcDrivers(folder,rtc_waste_f,inputs):
+def RtcDrivers(folder,rtc_waste_df,inputs):
     store_inputs = pd.read_csv(folder / inputs)
-    waste_rtc = pd.read_csv(folder/rtc_waste_f)
+    waste_rtc = rtc_waste_df.copy()
     RTC_Waste_table = store_inputs[['Store', 'Pmg', 'Dep']].drop_duplicates()
     RTC_Waste_table = RTC_Waste_table.merge(waste_rtc, on=['Store', 'Pmg', 'Dep'], how='left') 
     RTC_Waste_table = RTC_Waste_table.replace(np.nan, 0)
