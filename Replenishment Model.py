@@ -129,23 +129,28 @@ if RUN_MODEL == True:
     Rtc_Drivers = rmf.RtcDrivers(directory,Parameters_Rtc_Waste,csv_inputs_f)
     
     # Finalizing Drivers
-    Final_Drivers_xlsx = rmf.FinalizingDrivers(directory,csv_inputs_f,produce_parameters_f,Repl_Drivers,Produce_Drivers,Rtc_Drivers)
+    Final_Drivers = rmf.FinalizingDrivers(directory,csv_inputs_f,produce_parameters_f,Repl_Drivers,Produce_Drivers,Rtc_Drivers)
     if EXCEL_DRIVERS_SAVE == True:
-        file_name = 'Drivers_Final_'+version_saved+'.xlsx'
+        file_name = 'Model_Outputs/Drivers_Final_'+version_saved+'.xlsx'
+        stores_profiles = pd.read_csv(directory/csv_inputs_f) 
+        stores_profiles = stores_profiles[['Country','Store','Store Name','Plan Size','Format']].drop_duplicates() # in excel model we need these info
+        Final_Drivers_xlsx = Final_Drivers.copy()
+        Final_Drivers_xlsx = Final_Drivers_xlsx.merge(stores_profiles,on='Store',how='left')
+        Final_Drivers_xlsx['Dep'] = Final_Drivers_xlsx.Dep.apply(lambda x: 'GM' if x=='HDL' else x) # in the excel model I use GM instead HDL
         Final_Drivers_xlsx.to_excel(directory / file_name, index=False)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Replenishment Drivers Dataframe is ready and saved. Executed Time (sec): " if EXCEL_DRIVERS_SAVE == True else "Replenishment Drivers Dataframe is ready and not saved. Executed Time (sec): ")    
     
     # Combining Times, Drivers and calc hours per activity
     time_start = CurrentTime()
-    Time_Value = rmf.TimeValues(directory,csv_inputs_f,most_f,Final_Drivers_xlsx)
+    Time_Value = rmf.TimeValues(directory,csv_inputs_f,most_f,Final_Drivers)
     Time_Value = rmf.HoursCalculation(directory,csv_inputs_f,Time_Value,REX_ALLOWANCE) # the same table like above but with hours (overwritten)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Time Values Dataframe is ready. Executed Time (sec): ")
     
     # Summarizing Hours
     rmf.OutputsComparison(directory,Time_Value,act_model_outputs)
-    opb_dep,opb_div,insight,final_drivers = rmf.OperationProductivityBasics(Time_Value,Final_Drivers_xlsx)
+    opb_dep,opb_div,insight,final_drivers_csv = rmf.OperationProductivityBasics(Time_Value,Final_Drivers)
     
     # Saving Tables from the model
     if OPB_DEP_SAVE == True:
@@ -159,4 +164,4 @@ if RUN_MODEL == True:
         insight.to_csv(directory / file_name, index=False)
     if MODEL_DRIVERS_SAVE == True:
         file_name = 'Model_Outputs/DRIVERS_'+version_saved+'.csv'
-        final_drivers.to_csv(directory / file_name, index=False)
+        final_drivers_csv.to_csv(directory / file_name, index=False)
