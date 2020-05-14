@@ -78,11 +78,15 @@ DATASET_TPN_SAVE = False
 STORE_INPUTS_SAVE = False
 VOLUMES_SAVE = False
 EXCEL_DRIVERS_SAVE = False
-OPB_DEP_SAVE = True
-OPB_DIV_SAVE = True
-INSIGHT_SAVE = True
-MODEL_DRIVERS_SAVE = True
-
+OPB_DEP_SAVE = False
+OPB_DIV_SAVE = False
+INSIGHT_SAVE = False
+MODEL_DRIVERS_SAVE = False
+# BI Report
+BI_REPORT = False
+REPL_TYPE = False # if we put True then we need a new ReplDataset table to calc New Repl Types
+if REPL_TYPE == True:
+    PARAM_OPEN_DATASET = True 
 
 if STORE_INPUTS_FUNC == True:
     time_start = CurrentTime()
@@ -165,3 +169,10 @@ if RUN_MODEL == True:
     if MODEL_DRIVERS_SAVE == True:
         file_name = 'Model_Outputs/DRIVERS_'+version_saved+'.csv'
         final_drivers_csv.to_csv(directory / file_name, index=False)
+    if BI_REPORT == True:
+        CalcTime(time_start,time_stop,"BI Report Inputs are saving now. Executed Time (sec): ")
+        if REPL_TYPE == True:
+            rmf.ReportBi(directory,Time_Value,REPL_TYPE,Repl_Dataset)
+        else:
+            Repl_Dataset = False
+            rmf.ReportBi(directory,Time_Value,REPL_TYPE,Repl_Dataset)

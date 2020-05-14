@@ -904,3 +904,75 @@ def OperationProductivityBasics(times,drivers):
     final_drivers = drivers.melt(id_vars=['Store','Dep'], var_name=['Driver_Names'], value_name='Driver_Values').sort_values(['Store','Dep'])
     final_drivers = final_drivers[final_drivers.Driver_Values>0] # remember that 0 means 'No' in the profiles
     return opb_dep,opb_div,insight,final_drivers
+
+def ReportBi(folder,time_values_new,repl_type_bool,dataset_new):
+    def CalcBiInputs(tv_new,tv_actual):
+        y = 1
+        for x in tv_new,tv_actual:
+            time_values = x
+            version_name = "New" if y == 1 else "Model"
+            ## Model Hours
+            df_hours = time_values.copy()
+            df_hours = df_hours[['Store', 'Dep', 'Suboperation', 'Activity_Group', 'hours']]
+            df_hours.rename(columns={'hours':'Hours'},inplace=True)
+            df_hours['Version'] = version_name
+            if version_name == 'New':
+                df_hours_new = df_hours
+            else:
+                df_hours_act = df_hours
+            
+            ## Model Drivers
+            df_drivers = time_values[['Store', 'Dep', 'Driver_1', 'Driver_2', 'Driver_3','Driver_4', 'Profile','Driver_1_value', 'Driver_2_value', 'Driver_3_value','Driver_4_value','Profile_value']].drop_duplicates()
+            df_drivers_a = df_drivers[['Store', 'Dep', 'Driver_1', 'Driver_2', 'Driver_3','Driver_4', 'Profile']]
+            df_drivers_a = df_drivers_a.melt(id_vars=['Store','Dep'], var_name=['Drivers'], value_name='Driver').sort_values(['Store','Dep'])
+            df_drivers_b = df_drivers[['Store', 'Dep','Driver_1_value', 'Driver_2_value', 'Driver_3_value','Driver_4_value','Profile_value']]
+            df_drivers_b = df_drivers_b.melt(id_vars=['Store','Dep'], var_name=['Drivers'], value_name='Value').sort_values(['Store','Dep'])
+            df_drivers_b = df_drivers_b[['Value']]
+            df_drivers = pd.concat([df_drivers_a, df_drivers_b], axis=1).drop_duplicates()
+            df_drivers = df_drivers[df_drivers.Value>0]
+            df_drivers['Version'] = version_name
+            if version_name == 'New':
+                df_drivers_new = df_drivers
+            else:
+                df_drivers_act = df_drivers
+            y+=1
+        return df_hours_new, df_hours_act, df_drivers_new, df_drivers_act
+    def CalcReplType(dataset_new):
+        dataset_act = pd.read_csv(folder/'Model_Datasets/Repl_Dataset_2019.zip',compression='zip')
+        y = 1
+        for x in dataset_new,dataset_act:
+            dataset = x
+            version_name = "New" if y == 1 else "Model"
+            repl_type_df = dataset[['country','pmg','pmg_name','sold_units','stock', 'srp', 'nsrp', 'full_pallet', 'mu']].copy()
+            repl_type_df = repl_type_df.groupby(['country','pmg','pmg_name','srp', 'nsrp', 'full_pallet', 'mu']).agg({'sold_units':'sum','stock':'sum'}).reset_index()
+            repl_type_df['Dep'] = repl_type_df.pmg.str[:3]
+            repl_type_df = repl_type_df.melt(id_vars=['country','pmg','pmg_name','sold_units','stock','Dep'],var_name=['Replenishment_Type'])
+            repl_type_df = repl_type_df[repl_type_df.value==1].sort_values(['country','pmg','Replenishment_Type'])
+            repl_type_df['Replenishment_Type'].replace({'srp':'SRP', 'nsrp':'NSRP', 'full_pallet':'Full Pallet', 'mu':'Full Pallet'},inplace=True)
+            repl_type_df.drop(columns={'value'},inplace=True)
+            repl_type_df['Version'] = version_name
+            if version_name == 'New':
+                repl_type_df_new = repl_type_df
+            else:
+                repl_type_df_act = repl_type_df
+            y+=1
+        return repl_type_df_new, repl_type_df_act
+    
+    # Hours and Drivers
+    time_values_act = pd.read_csv('C:/D/#PRACA/ReplModel/Model_Outputs/time_value_actual.zip',compression='zip')    
+    df_hours_new, df_hours_act, df_drivers_new, df_drivers_act = CalcBiInputs(time_values_new,time_values_act)
+    pd.concat([df_hours_act,df_hours_new]).to_csv('Model_Comparison_Hours.csv',index=False)
+    pd.concat([df_drivers_act,df_drivers_new]).to_csv('Model_Comparison_Drivers.csv',index=False)
+    
+    ## Model_Comparison_SortingTable
+    df_sort_tbl = time_values_new[['Dep', 'Suboperation', 'Activity_Group', 'Driver_1', 'Driver_2', 'Driver_3','Driver_4', 'Profile']].drop_duplicates()
+    df_sort_tbl = df_sort_tbl.melt(id_vars=['Dep', 'Suboperation', 'Activity_Group'], var_name=['no'], value_name='Driver')
+    df_sort_tbl.drop(columns={'no'},inplace=True)
+    df_sort_tbl = df_sort_tbl.drop_duplicates()
+    df_sort_tbl = df_sort_tbl[df_sort_tbl.Driver!='no_driver']
+    df_sort_tbl.to_csv('Model_Comparison_SortingTable.csv',index=False)
+    
+    # Replenishment Types
+    if repl_type_bool == True:
+        repl_type_df_new, repl_type_df_act = CalcReplType(dataset_new)
+        pd.concat([repl_type_df_act,repl_type_df_new]).to_csv('Replenishment_Type_summary.csv',index=False)

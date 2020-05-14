@@ -5,6 +5,36 @@ Here you can find all the what if calc from 2020 (since May)
 import pandas as pd
 import numpy as np
 
+def CovidAnalysis(folder,dataset):
+    """
+    Topic: Analysis for Covid
+    """
+    Repl_Dataset = pd.read_csv(folder/dataset,compression='zip')
+    product_names = pd.read_csv(folder/'Model_Datasets/ItemsSold_X_2019.zip',compression='zip')
+    product_names = product_names[['store','tpn','product_name']].drop_duplicates()
+    pal_cap_file = pd.read_csv(folder/'Model_Datasets/Pallet_Capacity.csv')
+    
+    # just planogram
+    Repl_Dataset = Repl_Dataset[Repl_Dataset.capacity>0]
+    New_Dataset = Repl_Dataset.merge(pal_cap_file,on=['country', 'store', 'pmg'],how='inner')
+    New_Dataset = New_Dataset.merge(product_names,on=['store','tpn'],how='left')
+    
+    # dla srp użyjmy sprzedaż tygodniowa > 7x capacity
+    New_Dataset['new_srp'] = np.where(New_Dataset.sold_units>(7*New_Dataset.capacity),1,New_Dataset['srp'])
+    
+    # dla palety sprzedaż tygodniowa > 7x pallet capacity
+    New_Dataset['new_full_pallet'] = np.where(New_Dataset.sold_units>(7*New_Dataset.Pallet_Capacity),1,New_Dataset['full_pallet'])
+    
+# =============================================================================
+#     df = New_Dataset.groupby(['country','division']).agg({'srp':'sum','new_srp':'sum','full_pallet':'sum','new_full_pallet':'sum'}).reset_index()
+#     df.to_excel('new_rrp_summary.xlsx',index=False)
+#     df_kapelanka = New_Dataset[New_Dataset.store==31007].copy()
+#     df_kapelanka.to_excel('kapelanka_new_rrp.xlsx',index=False)
+# =============================================================================
+        
+    # dla produce zwiększmy cykle o 2 i o 4, jeśli teraz jest 5 to zróbmy 7 i 9
+    return New_Dataset
+
 def InnerPack(folder,dataset):
 	"""
 	Topic: "inner packs": what if we will keep some cases of a chosen tpns in a big carton?
