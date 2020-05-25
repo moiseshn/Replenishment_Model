@@ -27,10 +27,10 @@ version_saved = 'v7'
 
 directory = Path("C:/D/#PRACA/ReplModel/")
 repl_dataset_f = "Model_Datasets/Repl_Dataset_2019.zip"
-csv_inputs_f = 'Model_Datasets/stores_inputs_'+version_base+'.csv'
+csv_inputs_f = f'Model_Datasets/stores_inputs_{version_base}.csv'
 excel_inputs_f = 'Model_Inputs/Stores_Inputs.xlsx'
 pallet_capacity_f = 'Model_Datasets/Pallet_Capacity.csv'
-volumes_f = 'Model_Datasets/Volumes_2019_'+version_base+'.xlsx'
+volumes_f = f'Model_Datasets/Volumes_2019_{version_base}.xlsx'
 planogram_f = 'Model_Datasets/Planogram_IX_2019.zip'
 items_sold_f = 'Model_Datasets/ItemsSold_X_2019.zip' # 30.09-27.10
 stock_f = 'Model_Datasets/Stock_X_2019.zip' # 30.09-27.10
@@ -39,9 +39,9 @@ ops_dev_f = 'Model_Datasets/OpsDev_XI_2019.zip'
 most_f = 'Model_Datasets/MOST_Py.xlsx'
 act_model_outputs = 'Model_Outputs/Model_Outouts_actual.xlsx'
 
-final_parameters_f = 'Parameters_Outputs/final_parameters_'+version_base+'.csv'
-produce_parameters_f = 'Parameters_Outputs/produce_parameters_'+version_base+'.csv'
-rtc_waste_f = 'Parameters_Outputs/Waste_RTC_'+version_base+'.csv'
+final_parameters_f = f'Parameters_Outputs/final_parameters_{version_base}.csv'
+produce_parameters_f = f'Parameters_Outputs/produce_parameters_{version_base}.csv'
+rtc_waste_f = f'Parameters_Outputs/Waste_RTC_{version_base}.csv'
 
 items_f = 'RawData/volumes_III_2020/sales_items_III_2020.csv'
 cases_f = 'RawData/volumes_III_2020/cases_delivered_III_2020.csv'
@@ -85,14 +85,14 @@ MODEL_DRIVERS_SAVE = False
 # BI Report
 BI_REPORT = False
 REPL_TYPE = False # if we put True then we need a new ReplDataset table to calc New Repl Types
+
 if REPL_TYPE == True:
     PARAM_OPEN_DATASET = True 
-
 if STORE_INPUTS_FUNC == True:
     time_start = CurrentTime()
     store_inputs = rmf.StoreInputsCreator(directory)
     if STORE_INPUTS_SAVE == True:
-        file_name = 'Model_Datasets/stores_inputs_'+version_saved+'.csv'
+        file_name = f'Model_Datasets/stores_inputs_{version_saved}.csv'
         store_inputs.to_csv(directory/file_name, index=False)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Stores Inputs has been created and saved. Executed Time (sec): " if STORE_INPUTS_SAVE == True else "Stores Inputs has been created and not saved. Executed Time (sec): ")
@@ -100,7 +100,7 @@ if VOLUMES_FUNC == True:
     time_start = CurrentTime()
     volumes = rmf.VolumesCreator(directory,items_f,cases_f,lines_f,csv_inputs_f)
     if VOLUMES_SAVE == True:
-        file_name = 'Model_Datasets/Volumes_2019_'+version_saved+'.xlsx'
+        file_name = f'Model_Datasets/Volumes_2019_{version_saved}.xlsx'
         volumes.to_excel(directory/file_name, index=False)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Volumes_2019 has been created and saved. Executed Time (sec): " if VOLUMES_SAVE == True else "Volumes_2019 has been created and not saved. Executed Time (sec): ")
@@ -108,7 +108,7 @@ if DATASET_TPN_FUNC == True:
     time_start = CurrentTime()
     dataset_tpn = rmf.ReplDatasetTpn(directory,csv_inputs_f,planogram_f,stock_f,ops_dev_f,items_sold_f)
     if DATASET_TPN_SAVE == True:
-        file_name = 'Model_Datasets/Repl_Dataset_2019_'+version_saved+'.csv'
+        file_name = f'Model_Datasets/Repl_Dataset_2019_{version_saved}.csv'
         dataset_tpn.to_csv(directory / file_name, index=False)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Replenishment Dataset TPN table has been created and saved. Executed Time (sec): " if DATASET_TPN_SAVE == True else "Replenishment Dataset TPN table has been created and not saved. Executed Time (sec): ")
@@ -135,7 +135,7 @@ if RUN_MODEL == True:
     # Finalizing Drivers
     Final_Drivers = rmf.FinalizingDrivers(directory,csv_inputs_f,produce_parameters_f,Repl_Drivers,Produce_Drivers,Rtc_Drivers)
     if EXCEL_DRIVERS_SAVE == True:
-        file_name = 'Model_Outputs/Drivers_Final_'+version_saved+'.xlsx'
+        file_name = f'Model_Outputs/Drivers_Final_{version_saved}.xlsx'
         stores_profiles = pd.read_csv(directory/csv_inputs_f) 
         stores_profiles = stores_profiles[['Country','Store','Store Name','Plan Size','Format']].drop_duplicates() # in excel model we need these info
         Final_Drivers_xlsx = Final_Drivers.copy()
@@ -158,16 +158,16 @@ if RUN_MODEL == True:
     
     # Saving Tables from the model
     if OPB_DEP_SAVE == True:
-        file_name = 'Model_Outputs/OPB_DEP_'+version_saved+'.xlsx'
+        file_name = f'Model_Outputs/OPB_DEP_{version_saved}.xlsx'
         opb_dep.to_excel(directory / file_name, index=False)
     if OPB_DIV_SAVE == True:
-        file_name = 'Model_Outputs/OPB_DIV_'+version_saved+'.xlsx'
+        file_name = f'Model_Outputs/OPB_DIV_{version_saved}.xlsx'
         opb_div.to_excel(directory / file_name, index=False)
     if INSIGHT_SAVE == True:
-        file_name = 'Model_Outputs/INSIGHT_'+version_saved+'.csv'
+        file_name = f'Model_Outputs/INSIGHT_{version_saved}.csv'
         insight.to_csv(directory / file_name, index=False)
     if MODEL_DRIVERS_SAVE == True:
-        file_name = 'Model_Outputs/DRIVERS_'+version_saved+'.csv'
+        file_name = f'Model_Outputs/DRIVERS_{version_saved}.csv'
         final_drivers_csv.to_csv(directory / file_name, index=False)
     if BI_REPORT == True:
         CalcTime(time_start,time_stop,"BI Report Inputs are saving now. Executed Time (sec): ")
