@@ -525,7 +525,7 @@ def ReplenishmentDrivers(folder,parameters_df,inputs,RC_Capacity_Ratio):
     'items_sold': 'Items Sold', 'sales_excl_vat': 'sales', 'Active_Lines': 'Active Lines'})
     Drivers = Drivers.drop(['Sec_SRP_cases','Sec_NSRP_cases','Racking','Country','Format','taggingPerc', 
     'presortPerc','Full_Pallet_ratio','Single_Pick_ratio','MU_ratio','Pallets Delivery Ratio', 
-    'Backstock Pallet Ratio','prack','Tagged_Items','Store Name','Plan Size',
+    'Backstock Pallet Ratio','prack','AdditionalMovement','PalletDelivery','Tagged_Items','Store Name','Plan Size',
     'Clip_Strip_ratio','Sec_NSRP_ratio','Sec_SRP_ratio','Capping_Shelf_ratio','Backstock_ratio',
     'One_Touch_ratio','Heavy_ratio','SRP_ratio','NSRP_ratio','Case_Capacity','Pallet_Capacity',
     'New_SRP_ratio','New_NSRP_ratio'], axis=1)
