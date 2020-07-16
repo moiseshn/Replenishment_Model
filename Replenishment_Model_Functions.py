@@ -3,12 +3,15 @@
 Created on Mon Mar 30 09:27:28 2020
 
 @author: mborycki
+Variable currency is claculated properly
+
+Budgeted (Q3)
 """
 import pandas as pd
 import numpy as np
 
-def StoreInputsCreator(folder):
-    xls = pd.ExcelFile(folder / 'Model_Inputs/Stores_Inputs.xlsx')
+def StoreInputsCreator(folder,inputs):
+    xls = pd.ExcelFile(folder / inputs)
     pmg_df = pd.read_excel(xls, 'pmg')
     pmg_df = pmg_df[pmg_df.Area=='Replenishment']
     store_list_df = pd.read_excel(xls, 'store_list')
@@ -135,7 +138,7 @@ def ParamCalc_b(tbl_name,a, b):
     tbl_name[a] = np.where(tbl_name[b]==1,tbl_name.s_ratio,0)
     tbl_name.drop([b],axis=1, inplace=True)
 
-def ReplenishmentParameters(folder,Repl_Dataset,sold_units_days,backstock_target,case_capacity_target,inputs,pallet_capacity_f,volumes_f):
+def ReplenishmentParameters(folder,Repl_Dataset,sold_units_days,backstock_target,case_capacity_target,inputs,pallet_capacity_f,volumes_f,case_capacity_f):
     store_inputs = pd.read_csv(folder / inputs)
     store_inputs = store_inputs.rename(columns={'Store':'store','Pmg':'pmg'}) # temporary
     store_inputs = store_inputs[['store', 'pmg']].drop_duplicates()
@@ -151,6 +154,8 @@ def ReplenishmentParameters(folder,Repl_Dataset,sold_units_days,backstock_target
     sales = sales[sales.sales_excl_vat > 0]
     pallet_capacity_df = pd.read_csv(folder / pallet_capacity_f)
     pallet_capacity_df = pallet_capacity_df[['store','pmg','Pallet_Capacity']]
+    case_capacity_df = pd.read_csv(folder / case_capacity_f)
+    case_capacity_df.rename(columns={'Store':'store','Pmg':'pmg'},inplace=True)
     dataset = Repl_Dataset[Repl_Dataset.capacity>0].copy() # temporary. Next time backstock calc based on this but rest of drivers calc based on full table
     dataset = dataset.drop(dataset[dataset.pmg=='HDL01'].index) # Remove newspapers from planogram
     dataset = dataset.drop_duplicates()
@@ -221,24 +226,8 @@ def ReplenishmentParameters(folder,Repl_Dataset,sold_units_days,backstock_target
     repl_parameters = repl_parameters.drop(['tpn', 's_ratio', 'stock'], axis=1)
     final_parameters = repl_parameters.groupby(['store', 'pmg'], as_index=False).sum()
     final_parameters = final_parameters.merge(tpn_count, on=['store', 'pmg'], how='left')
-    icase_table = dataset.loc[(dataset.nsrp==1), ['store', 'tpn', 'pmg', 'case_capacity', 'sold_units']].copy() # Case Capacity <-- target <-- zobacz czy jak dam iloc to zniknie problem
-    icase_table['case_capacity'] = np.where(icase_table.case_capacity>case_capacity_target,case_capacity_target,icase_table.case_capacity)
-    icase_table['case_capacity'] = np.where(((icase_table.pmg=='HDL28')&(icase_table.case_capacity<=6)), 30, icase_table.case_capacity) # TEMPORARY: HDL28 in here we can have icase = 1 but it should't be. We had not many lines in here
-    sales_ratio = icase_table.groupby(['store', 'pmg']).sold_units.sum().to_frame().reset_index()
-    sales_ratio['store'] = sales_ratio.store.astype(int)
-    sales_ratio = sales_ratio.rename(columns={'sold_units': 'total_sales'})
-    icase_table = icase_table.merge(sales_ratio, on=['store', 'pmg'], how='inner')
-    icase_table['ratio'] = icase_table.sold_units / icase_table.total_sales
-    icase_table['icase_x'] = icase_table.case_capacity * icase_table.ratio
-    icase_table = icase_table.groupby(['store', 'pmg']).icase_x.sum().to_frame().reset_index()
-    icase_table_avg = icase_table.groupby('pmg').icase_x.mean().reset_index()
-    icase_table_avg = icase_table_avg.rename(columns={'icase_x': 'icase_y'})
-    
-    final_parameters = final_parameters.merge(icase_table, on=['store', 'pmg'], how='left')
-    final_parameters = final_parameters.merge(icase_table_avg, on=['pmg'], how='left')
-    final_parameters = final_parameters.replace(np.nan,0)
-    final_parameters['Case_Capacity'] = np.where(final_parameters.icase_x==0,final_parameters.icase_y,final_parameters.icase_x)
-    final_parameters = final_parameters.drop(['icase_x', 'icase_y'], axis=1)
+    final_parameters = final_parameters.merge(case_capacity_df, on=['store','pmg'], how='left')
+    final_parameters['Case_Capacity'].fillna((final_parameters['Case_Capacity'].mean()),inplace=True)
     
     averages_pmg = final_parameters.copy() # Making averages for missing PMGs. Firstly, I do it in pmg level, next in department level as sometimes we do not have even one TPN from PMG which might have some Volumes from Zsolt
     averages_pmg = averages_pmg.drop(['store'], axis=1)
@@ -680,13 +669,14 @@ def FinalizingDrivers(folder,inputs,produce_parameters,repl_drivers,produce_driv
     store_inputs = pd.read_csv(folder / inputs)
     dep_profiles = store_inputs[['Store','Dep','Division','Trading Days','Fridge Doors','Eggs displayed at UHT Milks',
                              'Advertising Headers','Racking','Day Fill','Cardboard Baller','Capping Shelves',
-                             'Lift Allowance','Distance: WH to SF','Distance: WH to Yard','Fridge Door Modules',
+                             'Lift Allowance','Distance: WH to SF','Distance: WH to Yard','Cut Melones','Fridge Door Modules',
                              'Number of Warehouse Fridges','Number of Modules','Promo Displays','Pallets Delivery Ratio',
                              'Backstock Pallet Ratio','Customers', 'Fluctuation %','Steps (gates - work)','End Of Repl Tidy - Cases',
                              'Time for customers','ProductReturns_factor','Online price changes','CAYG Lines','CAYG Units','CAYG Cases',
                              'Trading Days - CAYG','Banana Hammock','Fresh CCLB TPN','Prepicked HL item','Trading Days - Dot Com',
                              'Night Fill','Red Labels','GBP_rates','Multifloor allowance','Pre-sort by other depts',
-                             'Stock Movement for Bakery and Counter','Stores without counters','VIP replenishment','Check Fridge Temperature','MULTIFLOOR']].drop_duplicates()
+                             'Stock Movement for Bakery and Counter','Stores without counters','VIP replenishment',
+							 'Check Fridge Temperature','MULTIFLOOR','EPW items','EPW Lines','MelonCitrus']].drop_duplicates()
     Final_Drivers = repl_drivers.append(produce_drivers, sort=False)
     Final_Drivers = Final_Drivers.merge(rtc_drivers, on=['Store', 'Pmg', 'Dep'], how='left')
     Final_Drivers = Final_Drivers.fillna(0)
@@ -857,13 +847,14 @@ def HoursCalculation(folder,inputs,df_times,RelaxationAllowance):
     store_inputs = pd.read_csv(folder / inputs)
     dep_profiles = store_inputs[['Store','Dep','Division','Trading Days','Fridge Doors','Eggs displayed at UHT Milks',
                              'Advertising Headers','Racking','Day Fill','Cardboard Baller','Capping Shelves',
-                             'Lift Allowance','Distance: WH to SF','Distance: WH to Yard','Fridge Door Modules',
+                             'Lift Allowance','Distance: WH to SF','Distance: WH to Yard','Cut Melones','Fridge Door Modules',
                              'Number of Warehouse Fridges','Number of Modules','Promo Displays','Pallets Delivery Ratio',
                              'Backstock Pallet Ratio','Customers', 'Fluctuation %','Steps (gates - work)','End Of Repl Tidy - Cases',
                              'Time for customers','ProductReturns_factor','Online price changes','CAYG Lines','CAYG Units','CAYG Cases',
                              'Trading Days - CAYG','Banana Hammock','Fresh CCLB TPN','Prepicked HL item','Trading Days - Dot Com',
                              'Night Fill','Red Labels','GBP_rates','Multifloor allowance','Pre-sort by other depts',
-                             'Stock Movement for Bakery and Counter','Stores without counters','VIP replenishment','Check Fridge Temperature','MULTIFLOOR']].drop_duplicates()
+                             'Stock Movement for Bakery and Counter','Stores without counters','VIP replenishment',
+							 'Check Fridge Temperature','MULTIFLOOR','EPW items','EPW Lines','MelonCitrus']].drop_duplicates()
     division_df=dep_profiles[['Store','Dep','Division','GBP_rates']].drop_duplicates()
     hours_df = hours_df.merge(division_df, on=['Store','Dep'], how='left')
     hours_df['Yearly GPB'] = hours_df.GBP_rates*hours_df.hours*52
@@ -894,7 +885,7 @@ def OperationProductivityBasics(times,drivers):
     opb_dep = opb_dep.merge(sales_df,on=['Store','Dep'],how='inner')
     
     opb_div = opb_dep.groupby(['Country','Store','Format','Division']).agg({'Fix Hours':'sum','Variable Hours':'sum','Total Hours':'sum','Yearly GBP':'sum','sales':'sum'}).reset_index()
-    opb_div['Variable Currency'] = opb_div['sales'] / opb_div['Total Hours']
+    opb_div['Variable Currency'] = opb_div['sales'] / opb_div['Variable Hours']
     
     opb_dep.drop('sales', axis=1, inplace=True)
     opb_div.drop('sales', axis=1, inplace=True)
