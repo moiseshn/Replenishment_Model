@@ -742,8 +742,10 @@ def TimeValues(folder,inputs,most_f,drivers_table):
     stores_df = store_inputs[['Country','Store','Format','Store Name','Plan Size']].drop_duplicates()
     storelist_array = stores_df[['Country', 'Store', 'Format']].drop_duplicates().values
     
-    most_file = pd.ExcelFile(folder/most_f)
-    activity_list = pd.read_excel(most_file,'activities')
+    most_file = pd.ExcelFile(folder/most_f, engine='pyxlsb')
+    activity_list = pd.read_excel(most_file,'TimeValues_Py',usecols='T:AE')
+    activity_list.dropna(subset=['Activity_key_activities'],inplace=True)
+    activity_list.rename(columns={'Activity_key_activities':'Activity_key'},inplace=True)
     activity_list['Freq_Driver_2'] = activity_list['Freq_Driver_2'].replace(np.nan,0)
     activity_list = activity_list.replace(np.nan,'no_driver')
     activities = activity_list[['Activity_key']].copy()
@@ -751,7 +753,10 @@ def TimeValues(folder,inputs,most_f,drivers_table):
     activities['Format'] = ''
     activities['Dep'] = ''
     activities['Store'] = 0
-    times = pd.read_excel(most_file,'times')
+    
+    times = pd.read_excel(most_file,'TimeValues_Py',usecols='M:R')
+    times.dropna(subset=['Activity_key_times'],inplace=True)
+    times.rename(columns={'Activity_key_times':'Activity_key'},inplace=True)
     times_array = activities.values
     departments = pd.DataFrame(['DRY','HEA','BWS','DAI','PPD','FRZ','PRO','HDL','NEW'], columns=['Dep'])
     dep_array = departments.values
@@ -848,31 +853,31 @@ def HoursCalculation(folder,inputs,df_times,RelaxationAllowance):
 							 'Check Fridge Temperature','MULTIFLOOR','EPW items','EPW Lines','MelonCitrus']].drop_duplicates()
     division_df=dep_profiles[['Store','Dep','Division','GBP_rates']].drop_duplicates()
     hours_df = hours_df.merge(division_df, on=['Store','Dep'], how='left')
-    hours_df['Yearly GPB'] = hours_df.GBP_rates*hours_df.hours*52
+    hours_df['Yearly GBP'] = hours_df.GBP_rates*hours_df.hours*52
     return hours_df
 
 def OutputsComparison(folder,times,current_outputs):    
-    new_hrs = times.groupby(['Country','Division']).agg({'hours':'sum','Yearly GPB':'sum'}).reset_index()
-    new_hrs.rename(columns={'hours':'New_Hours','Yearly GPB':'New_Yearly_GBP'},inplace=True)
+    new_hrs = times.groupby(['Country','Division']).agg({'hours':'sum','Yearly GBP':'sum'}).reset_index()
+    new_hrs.rename(columns={'hours':'New_Hours','Yearly GBP':'New_Yearly GBP'},inplace=True)
     previous_hrs = pd.read_excel(folder/current_outputs)
-    previous_hrs = previous_hrs.groupby(['Country','Division']).agg({'hours':'sum','Yearly GPB':'sum'}).reset_index()
+    previous_hrs = previous_hrs.groupby(['Country','Division']).agg({'Total Hours':'sum','Yearly GBP':'sum'}).reset_index()
     hrs_comparison = previous_hrs.merge(new_hrs, on=['Country','Division'],how='left')
-    hrs_comparison['diff_hours'] = hrs_comparison.New_Hours - hrs_comparison.hours
-    hrs_comparison['diff_%'] = ((hrs_comparison.diff_hours / hrs_comparison.hours) * 100)
+    hrs_comparison['diff_hours'] = hrs_comparison['New_Hours'] - hrs_comparison['Total Hours']
+    hrs_comparison['diff_%'] = ((hrs_comparison.diff_hours / hrs_comparison['Total Hours']) * 100)
     pd.options.display.float_format = '{:.1f}'.format
     return print('\nDifferences between the last and current version:\n\n',hrs_comparison[['Country','Division','diff_hours','diff_%']],'\n')
 
 def OperationProductivityBasics(times,drivers):
     sales_df = drivers[['Store','Dep','sales']].copy()
-    opb = times.groupby(['Country','Store','Format','Dep','Division','V_F']).agg({'hours':'sum','Yearly GPB':'sum'}).sort_values(['Store','Division']).reset_index()
-    opb_fix = opb[opb.V_F=='F'].rename(columns={'hours':'Fix Hours','Yearly GPB':'Yearly_GPB_fix'})
+    opb = times.groupby(['Country','Store','Format','Dep','Division','V_F']).agg({'hours':'sum','Yearly GBP':'sum'}).sort_values(['Store','Division']).reset_index()
+    opb_fix = opb[opb.V_F=='F'].rename(columns={'hours':'Fix Hours','Yearly GBP':'Yearly_GBP_fix'})
     opb_fix.drop('V_F',axis=1,inplace=True)
-    opb_var = opb[opb.V_F=='V'].rename(columns={'hours':'Variable Hours','Yearly GPB':'Yearly_GPB_var'})
+    opb_var = opb[opb.V_F=='V'].rename(columns={'hours':'Variable Hours','Yearly GBP':'Yearly_GBP_var'})
     opb_var.drop('V_F',axis=1,inplace=True)
     opb_dep = opb_fix.merge(opb_var,on=['Country','Store','Format','Dep','Division'], how='inner')
     opb_dep['Total Hours'] = opb_dep['Fix Hours'] + opb_dep['Variable Hours']
-    opb_dep['Yearly GBP'] = opb_dep.Yearly_GPB_fix + opb_dep.Yearly_GPB_var
-    opb_dep.drop(['Yearly_GPB_fix','Yearly_GPB_var'], axis=1, inplace=True)
+    opb_dep['Yearly GBP'] = opb_dep.Yearly_GBP_fix + opb_dep.Yearly_GBP_var
+    opb_dep.drop(['Yearly_GBP_fix','Yearly_GBP_var'], axis=1, inplace=True)
     opb_dep = opb_dep.merge(sales_df,on=['Store','Dep'],how='inner')
     
     opb_div = opb_dep.groupby(['Country','Store','Format','Division']).agg({'Fix Hours':'sum','Variable Hours':'sum','Total Hours':'sum','Yearly GBP':'sum','sales':'sum'}).reset_index()

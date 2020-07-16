@@ -18,7 +18,7 @@ def CalcTime(time_start,time_stop,text):
 
 # File versions
 version_base = 'Q3'
-version_saved = 'Q3_v1' 
+version_saved = 'Q3_v2' 
 
 directory = Path("C:/D/#PRACA/ReplModel/")
 repl_dataset_f = "Model_Datasets/Repl_Dataset_2019.zip"
@@ -27,18 +27,18 @@ items_sold_f = 'Model_Datasets/ItemsSold_X_2019.zip' # 30.09-27.10
 stock_f = 'Model_Datasets/Stock_X_2019.zip' # 30.09-27.10
 ops_dev_f = 'Model_Datasets/OpsDev_XI_2019.zip'
 
-volumes_f = f'Model_Datasets/Volumes_2019_{version_base}.xlsx' #Volumes_2019_adjusted2_newStores.xlsx
+volumes_f = f'Model_Datasets/Volumes_2019_{version_base}.xlsx' # Volumes_2019_adjusted2_newStores.xlsx (the same volumes like in P82019 + new stores)
 excel_inputs_f = f'Model_Inputs/Stores_Inputs_{version_base}.xlsx' 
 csv_inputs_f = f'Model_Datasets/stores_inputs_{version_base}.csv'
 pallet_capacity_f = f'Model_Datasets/Pallet_Capacity_{version_base}.csv'
 case_capacity_f = f'Model_Datasets/Case_Capacity_{version_base}.csv' 
-losses_f = f'Model_Datasets/Losses_X_2019_{version_base}.csv' 
-most_f = f'Model_Datasets/MOST_Py_{version_base}.xlsx' 
+losses_f = f'Model_Datasets/Losses_X_2019_{version_base}.csv' # 30.09-27.10 + code 14
+most_f = f'Model_Inputs/MOST_Replenishment_{version_base}.xlsb' 
 
 final_parameters_f = f'Parameters_Outputs/final_parameters_{version_base}.csv'
 produce_parameters_f = f'Parameters_Outputs/produce_parameters_{version_base}.csv'
 rtc_waste_f = f'Parameters_Outputs/Waste_RTC_{version_base}.csv'
-act_model_outputs = f'Model_Outputs/Model_Outouts_{version_base}.xlsx'
+act_model_outputs = f'Model_Outputs/Model_Outputs_Q3_v1.xlsx' # Budgeted + ~2hrs on Produce because of Heavy/Light issue described in the summary file
 
 items_f = 'RawData/volumes_III_2020/sales_items_III_2020.csv'
 cases_f = 'RawData/volumes_III_2020/cases_delivered_III_2020.csv'
