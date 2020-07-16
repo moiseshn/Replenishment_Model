@@ -1,28 +1,3 @@
-""" Description:
-@author: mborycki
-----------------------
-Budgeted (Q3) - it gave exactly the hours we have in Q3 once we run all parameters, as I do not have saved parameters (with heavy/light %) anywhere
-----------------------
-The "ReplenishmentParameters" needs to be run once we change one of the below table:
-Volumes (volumes_f)
-Pallet Capacity (pallet_capacity_f)
-Case Capacity (case_capacity_f)
-Dataset (Repl_Dataset)
-Variables (SOLD_UNIT_DAYS, BACKSTOCK_TARGET, CASE_CAP_TARGET)
-Stores_Inputs (csv_inputs_f - Store list & PMG)
-----------------------
-The "ProduceParameters" needs to be run once we change one of the below table:
-Volumes (volumes_f)
-Pallet Capacity (pallet_capacity_f)
-Dataset (Repl_Dataset)
-Variables (SOLD_UNIT_DAYS, MODULE_CRATES, TABLE_CRATES, SALES_CYCLE, FULFILL_TARGET)
-Stores_Inputs (excel_inputs_f - produce_modules, produce_df)
-----------------------
-The "RtcDrivers" needs to be run once we change one of the below table:
-Loss File (losses_f)
-Dataset (Repl_Dataset)
-Variables (LOSS_UNIT_DAYS)
-"""
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
@@ -61,8 +36,7 @@ losses_f = f'Model_Datasets/Losses_X_2019_{version_base}.csv'
 most_f = f'Model_Datasets/MOST_Py_{version_base}.xlsx' 
 
 final_parameters_f = f'Parameters_Outputs/final_parameters_{version_base}.csv'
-produce_parameters_f = f'Parameters_Outputs/produce_parameters_{version_base}.csv' 
-produce_parameters_weight_ratio =  'Parameters_Outputs/produce_parameters_actual.csv'
+produce_parameters_f = f'Parameters_Outputs/produce_parameters_{version_base}.csv'
 rtc_waste_f = f'Parameters_Outputs/Waste_RTC_{version_base}.csv'
 act_model_outputs = f'Model_Outputs/Model_Outouts_{version_base}.xlsx'
 
@@ -88,10 +62,10 @@ FULFILL_TARGET = 0.6
 
 # Model
 RUN_MODEL = True
-PARAM_OPEN_DATASET = True # if any of the below PARAM bool == True, True, False
-PARAM_REPLENISHMENT_FUNC = True # if we want to calc it based on some new inputs: True else False
-PARAM_PRODUCE_FUNC = True
-PARAM_RTC_FUNC = True
+PARAM_OPEN_DATASET = False # if any of the below PARAM bool == True, True, False
+PARAM_REPLENISHMENT_FUNC = False # if we want to calc it based on some new inputs: True else False
+PARAM_PRODUCE_FUNC = False
+PARAM_RTC_FUNC = False
 # Datasets
 STORE_INPUTS_FUNC = False
 VOLUMES_FUNC = False
@@ -101,7 +75,7 @@ DATASET_TPN_SAVE = False
 STORE_INPUTS_SAVE = False
 VOLUMES_SAVE = False
 EXCEL_DRIVERS_SAVE = False
-OPB_DEP_SAVE = False
+OPB_DEP_SAVE = True
 OPB_DIV_SAVE = False
 INSIGHT_SAVE = False
 MODEL_DRIVERS_SAVE = False
@@ -166,7 +140,7 @@ if RUN_MODEL == True:
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"RTC Table is ready. Executed Time (sec): ")
     # Finalizing Drivers
-    Final_Drivers = rmf.FinalizingDrivers(directory,csv_inputs_f,produce_parameters_weight_ratio,Repl_Drivers,Produce_Drivers,Rtc_Drivers)
+    Final_Drivers = rmf.FinalizingDrivers(directory,csv_inputs_f,Parameters_Produce,Repl_Drivers,Produce_Drivers,Rtc_Drivers)
 
     # Combining Times, Drivers and calc hours per activity
     time_start = CurrentTime()

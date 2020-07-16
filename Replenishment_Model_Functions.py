@@ -1,12 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Mar 30 09:27:28 2020
-
-@author: mborycki
-Variable currency is claculated properly
-
-Budgeted (Q3)
-"""
 import pandas as pd
 import numpy as np
 
@@ -665,7 +656,7 @@ def RtcDrivers(folder,rtc_waste_df,inputs):
     return RTC_Waste_table
 
 def FinalizingDrivers(folder,inputs,produce_parameters,repl_drivers,produce_drivers,rtc_drivers):
-    produce_parameters = pd.read_csv(folder / produce_parameters)
+    #produce_parameters = pd.read_csv(folder / produce_parameters)
     store_inputs = pd.read_csv(folder / inputs)
     dep_profiles = store_inputs[['Store','Dep','Division','Trading Days','Fridge Doors','Eggs displayed at UHT Milks',
                              'Advertising Headers','Racking','Day Fill','Cardboard Baller','Capping Shelves',
