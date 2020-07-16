@@ -38,12 +38,11 @@ def StoreInputsCreator(folder,inputs):
     store_inputs = store_inputs.merge(Pprofiles_df, on=['Country', 'Format', 'Pmg'], how='left')
     return store_inputs
 
-def VolumesCreator(folder,items_f,cases_f,lines_f,dataset_inputs_f):
+def VolumesCreator(folder,items_f,cases_f,lines_f,storelist):
     items = pd.read_csv(folder/items_f)
     cases_table = pd.read_csv(folder/cases_f)
     lines = pd.read_csv(folder/lines_f)
     
-    storelist = pd.read_csv(folder/dataset_inputs_f)
     storelist = storelist[['Store']].drop_duplicates()
     storelist.rename(columns=({'Store':'store'}),inplace=True)
     ile_linii = lines[['store', 'tpn', 'pmg']] # incl CLG and other depts
@@ -63,8 +62,7 @@ def VolumesCreator(folder,items_f,cases_f,lines_f,dataset_inputs_f):
     new_volume = new_volume.fillna(0)
     return new_volume
 
-def ReplDatasetTpn(folder,dataset_inputs_f,planogram_f,stock_f,ops_dev_f,items_sold_f):
-    store_inputs = pd.read_csv(folder / dataset_inputs_f)
+def ReplDatasetTpn(folder,store_inputs,planogram_f,stock_f,ops_dev_f,items_sold_f):
     store_inputs.columns = map(str.lower, store_inputs.columns)
     store_inputs.rename(columns={'pmg name':'pmg_name'},inplace=True)
     store_inputs = store_inputs[['country', 'store', 'pmg', 'pmg_name', 'division','is_capping_shelf']].drop_duplicates()
@@ -129,8 +127,7 @@ def ParamCalc_b(tbl_name,a, b):
     tbl_name[a] = np.where(tbl_name[b]==1,tbl_name.s_ratio,0)
     tbl_name.drop([b],axis=1, inplace=True)
 
-def ReplenishmentParameters(folder,Repl_Dataset,sold_units_days,backstock_target,case_capacity_target,inputs,pallet_capacity_f,volumes_f,case_capacity_f):
-    store_inputs = pd.read_csv(folder / inputs)
+def ReplenishmentParameters(folder,Repl_Dataset,sold_units_days,backstock_target,case_capacity_target,store_inputs,pallet_capacity_f,volumes_f,case_capacity_f):
     store_inputs = store_inputs.rename(columns={'Store':'store','Pmg':'pmg'}) # temporary
     store_inputs = store_inputs[['store', 'pmg']].drop_duplicates()
     volumes_table = pd.read_excel(folder / volumes_f, sheet_name='Sheet1', usecols=['store', 'pmg', 'cases_delivered', 'product_stocked', 'items_sold', 'sales_excl_vat']) # Volumes < -- probably we should keep it above
@@ -272,7 +269,6 @@ def ReplenishmentParameters(folder,Repl_Dataset,sold_units_days,backstock_target
     return final_parameters
 
 def ProduceParameters(folder,Repl_Dataset,inputs,sold_units_days,crates_per_module,crates_per_table,volumes_f,sales_cycle,fulfill_target,pallet_capacity_f):
-
     volumes_table = pd.read_excel(folder / volumes_f, sheet_name='Sheet1', usecols=['store', 'pmg', 'cases_delivered', 'product_stocked', 'items_sold', 'sales_excl_vat']) # Volumes < -- probably we should keep it above
     volumes_table = volumes_table.replace(np.nan, 0)
     cases = volumes_table[['store', 'pmg', 'cases_delivered']]
@@ -440,8 +436,8 @@ def RtcParameters(folder,Repl_Dataset,losses_f,losses_units_days):
     return waste_rtc
 
 # Drivers and Hours Calculation
-def ReplenishmentDrivers(folder,parameters_df,inputs,RC_Capacity_Ratio):
-    store_inputs = pd.read_csv(folder / inputs)
+def ReplenishmentDrivers(parameters_df,inputs,RC_Capacity_Ratio):
+    store_inputs = inputs.copy()
     stores_df = store_inputs[['Country','Store','Format','Store Name','Plan Size']].drop_duplicates()
     dep_df = store_inputs[['Store','Dep','Racking','Pallets Delivery Ratio','Backstock Pallet Ratio']].drop_duplicates()
     pmg_df = store_inputs[['Country','Format','Pmg','taggingPerc','presortPerc','prack','AdditionalMovement','PalletDelivery']].drop_duplicates()
@@ -634,9 +630,9 @@ def ProduceDrivers(folder,parameters_df,RC_delivery_ratio,RC_vs_Pallet_capacity)
     produce_driveres = produce_driveres.merge(x, on=['Store', 'Pmg'], how='left')
     return produce_driveres
 
-def RtcDrivers(folder,rtc_waste_df,inputs):
-    store_inputs = pd.read_csv(folder / inputs)
+def RtcDrivers(rtc_waste_df,inputs):
     waste_rtc = rtc_waste_df.copy()
+    store_inputs = inputs.copy()
     RTC_Waste_table = store_inputs[['Store', 'Pmg', 'Dep']].drop_duplicates()
     RTC_Waste_table = RTC_Waste_table.merge(waste_rtc, on=['Store', 'Pmg', 'Dep'], how='left') 
     RTC_Waste_table = RTC_Waste_table.replace(np.nan, 0)
@@ -655,9 +651,8 @@ def RtcDrivers(folder,rtc_waste_df,inputs):
     'Food Donation Lines': 'sum', 'RTC Items': 'sum','Waste Items': 'sum', 'Food Donation Items': 'sum','Waste Bulk (one bag)': 'sum', 'Food Donation Bulk (one bag)': 'sum'}).reset_index()    
     return RTC_Waste_table
 
-def FinalizingDrivers(folder,inputs,produce_parameters,repl_drivers,produce_drivers,rtc_drivers):
+def FinalizingDrivers(folder,store_inputs,produce_parameters,repl_drivers,produce_drivers,rtc_drivers):
     #produce_parameters = pd.read_csv(folder / produce_parameters)
-    store_inputs = pd.read_csv(folder / inputs)
     dep_profiles = store_inputs[['Store','Dep','Division','Trading Days','Fridge Doors','Eggs displayed at UHT Milks',
                              'Advertising Headers','Racking','Day Fill','Cardboard Baller','Capping Shelves',
                              'Lift Allowance','Distance: WH to SF','Distance: WH to Yard','Cut Melones','Fridge Door Modules',
@@ -737,8 +732,7 @@ def FinalizingDrivers(folder,inputs,produce_parameters,repl_drivers,produce_driv
     Final_Drivers = Final_Drivers.replace(np.nan,0)
     return Final_Drivers
 
-def TimeValues(folder,inputs,most_f,drivers_table):
-    store_inputs = pd.read_csv(folder / inputs)
+def TimeValues(folder,store_inputs,most_f,drivers_table):
     stores_df = store_inputs[['Country','Store','Format','Store Name','Plan Size']].drop_duplicates()
     storelist_array = stores_df[['Country', 'Store', 'Format']].drop_duplicates().values
     
@@ -809,7 +803,7 @@ def CalcModelHours(calc_hours):
     calc_hours['hours'] = np.where((calc_hours.Profile_value==0)&(calc_hours.Profile!='no_driver'), 0, calc_hours['hours'])
     return calc_hours
 
-def HoursCalculation(folder,inputs,df_times,RelaxationAllowance):
+def HoursCalculation(folder,store_inputs,df_times,RelaxationAllowance):
     hours_df = df_times.copy()
     hours_df['RA_time'] = np.where(hours_df.RA=='Y',hours_df.basic_time*(RelaxationAllowance/100),0)
     hours_df['basic_time'] = hours_df.basic_time+hours_df.RA_time
@@ -840,7 +834,6 @@ def HoursCalculation(folder,inputs,df_times,RelaxationAllowance):
     hours_df['Driver_4_value'] = np.where(hours_df.Driver_4=='Headcount', hours_df.Headcount, hours_df['Driver_4_value'])
     hours_df.drop(columns={'Headcount'}, axis=1, inplace=True)
     hours_df = CalcModelHours(hours_df)
-    store_inputs = pd.read_csv(folder / inputs)
     dep_profiles = store_inputs[['Store','Dep','Division','Trading Days','Fridge Doors','Eggs displayed at UHT Milks',
                              'Advertising Headers','Racking','Day Fill','Cardboard Baller','Capping Shelves',
                              'Lift Allowance','Distance: WH to SF','Distance: WH to Yard','Cut Melones','Fridge Door Modules',
