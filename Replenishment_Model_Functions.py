@@ -14,7 +14,6 @@ def StoreInputsCreator(folder,inputs):
     store_array = store_list_df.values
     result = len(store_array) * len(pmg_array) # 871 * 154
     df_array = np.empty([result,9], dtype='object') # create an empty array
-    
     counter = 0
     for s in range(len(store_array)):
         for p in range(len(pmg_array)):
@@ -30,7 +29,6 @@ def StoreInputsCreator(folder,inputs):
             counter += 1
     store_inputs = pd.DataFrame(columns=['Country', 'Store', 'Store Name', 'Plan Size', 'Format', 'Pmg', 'Pmg Name', 'Dep', 'Division'])
     store_inputs = store_inputs.append(pd.DataFrame(df_array, columns=store_inputs.columns))
-    #store_inputs['dep'] = store_inputs.pmg.str[:3]
     store_inputs['Dep'] = np.where(store_inputs.Pmg=='HDL01', 'NEW', store_inputs.Dep)
     store_inputs = store_inputs.merge(capping_df, on=['Store', 'Pmg'], how='left')
     store_inputs['is_capping_shelf'] = store_inputs['is_capping_shelf'].replace(np.nan,0)
@@ -42,7 +40,6 @@ def VolumesCreator(folder,items_f,cases_f,lines_f,storelist):
     items = pd.read_csv(folder/items_f)
     cases_table = pd.read_csv(folder/cases_f)
     lines = pd.read_csv(folder/lines_f)
-    
     storelist = storelist[['Store']].drop_duplicates()
     storelist.rename(columns=({'Store':'store'}),inplace=True)
     ile_linii = lines[['store', 'tpn', 'pmg']] # incl CLG and other depts
@@ -52,10 +49,6 @@ def VolumesCreator(folder,items_f,cases_f,lines_f,storelist):
     new_volume = new_volume.merge(storelist, on=['store'], how='inner')
     new_volume.dropna(subset=['pmg'],inplace=True)
     new_volume = new_volume[new_volume.pmg!='UNA01']
-    
-    # new_volume.sold_units = new_volume.sold_units.apply(lambda x: x / 4)
-    # new_volume.sales_excl_vat = new_volume.sales_excl_vat.apply(lambda x: x / 4)
-    # new_volume.cases = new_volume.cases.apply(lambda x: x / 4)
     new_volume = new_volume.rename(columns={'cases':'cases_delivered','sold_units':'items_sold','tpn':'product_stocked'})
     new_volume['dep'] = new_volume.pmg.str[:3]
     new_volume = new_volume.sort_values(['store','pmg'])
@@ -75,7 +68,6 @@ def ReplDatasetTpn(folder,store_inputs,planogram_f,stock_f,ops_dev_f,items_sold_
     stock.columns = stock.columns.str.replace('mbo_daily_stock_october.', '') # think how to change the name to variable. Maybe just do "names=colnames"
     stock = stock[['store', 'tpn', 'stock']]
     isold = pd.read_csv(folder / items_sold_f)
-    
     Repl_Dataset = isold.merge(stock, on=['store', 'tpn'], how='left')
     Repl_Dataset = Repl_Dataset.merge(opsdev, on=['tpnb', 'store'], how='left')
     Repl_Dataset = Repl_Dataset.merge(store_inputs, on=['country','store','pmg'], how='inner')
@@ -88,13 +80,11 @@ def ReplDatasetTpn(folder,store_inputs,planogram_f,stock_f,ops_dev_f,items_sold_
     Repl_Dataset['icase'] = np.where(Repl_Dataset.icase==0, Repl_Dataset.case_capacity, Repl_Dataset.icase)
     Repl_Dataset.drop(['case_capacity'], axis=1, inplace=True)
     Repl_Dataset.rename(columns={'icase': 'case_capacity'}, inplace=True)
-    
     result = len(Repl_Dataset.drop_duplicates())-len(Repl_Dataset.drop_duplicates(subset=['store', 'tpn'])) # checking do we have more than 1 value for the same store / tpn
     if result==0:
         Repl_Dataset = Repl_Dataset.drop_duplicates()
     else:
         print('We have problem. There is:', result, 'records with different values. Check why...')
-    
     Repl_Dataset['srp'] = Repl_Dataset['srp'].astype(int) # Integer for OpsDev columns
     Repl_Dataset['nsrp'] = Repl_Dataset['nsrp'].astype(int)
     Repl_Dataset['full_pallet'] = Repl_Dataset['full_pallet'].astype(int)
@@ -105,12 +95,10 @@ def ReplDatasetTpn(folder,store_inputs,planogram_f,stock_f,ops_dev_f,items_sold_
     # Repl_Dataset['unit_type'] = np.where((Repl_Dataset.pmg.str.contains('PRO')), Repl_Dataset['unit_type'], Repl_Dataset['ut'])
     # Repl_Dataset.drop(['decimal', 'ut'], axis=1, inplace=True) # change 2
     Repl_Dataset['unit_type'] = np.where(Repl_Dataset.unit_type!='KG','SNGL','KG')
-    
     tesco_bags=[2005107372973, 2005105784679, 2005105784532, 2005105784044, 2005105784051, 2005100375337,
     2005100375338, 2005100375340, 2005103002898]
     for bag in tesco_bags: # Remove Tesco Bags
         Repl_Dataset.drop(Repl_Dataset[Repl_Dataset['tpn']==bag].index, inplace=True)
-    
     Repl_Dataset['single_pick'] = 0 # change 1 
     Repl_Dataset = pd.DataFrame(Repl_Dataset, columns=['country', 'store', 'tpn', 'tpnb', 'pmg', 'pmg_name', 'division', 'unit_type', 
     'case_capacity', 'capacity', 'weight', 'sold_units', 'sales_excl_vat', 'stock', 'srp', 'nsrp', 'full_pallet', 'mu',
@@ -168,14 +156,12 @@ def ReplenishmentParameters(folder,Repl_Dataset,sold_units_days,backstock_target
     dataset.secondary_nsrp = np.where((1-(dataset.capacity/dataset.stock)>0.4), dataset.secondary_nsrp,0)
     dataset.secondary_nsrp = np.where(dataset.stock<dataset.capacity,0, dataset.secondary_nsrp)
     dataset.secondary_nsrp = np.where(dataset.srp==0, dataset.secondary_nsrp,0)
-    
     Repl_B = dataset.copy() # 5. Foil replenishment
     dataset_no_foil = Repl_B[((Repl_B.foil==0)&(Repl_B.srp==1))|((Repl_B.foil==1)&(Repl_B.srp==1))|((Repl_B.foil==0)&(Repl_B.srp==0))].copy()
     dataset_foil_nsrp = Repl_B[(Repl_B.foil==1)&(Repl_B.srp==0)].copy()
     driver_list = ['sold_units', 'stock', 'capacity', 'secondary_nsrp', 'secondary_srp', 'clipstrip']
     for driver in driver_list:
         FoilCalculation(dataset_foil_nsrp,driver)
-    
     dataset_foil_srp = dataset_foil_nsrp.copy()
     dataset_foil_srp.srp = 1
     dataset_foil_srp.nsrp = 0
@@ -190,23 +176,17 @@ def ReplenishmentParameters(folder,Repl_Dataset,sold_units_days,backstock_target
     Repl_dataset = Repl_dataset.merge(sales_ratio, on=['store', 'pmg'], how='left')
     Repl_dataset['s_ratio'] = Repl_dataset.sold_units / Repl_dataset.sales_ratio
     Repl_dataset = Repl_dataset.drop(['sales_ratio'], axis=1)
-    
     cols = ['store', 'tpn', 'pmg', 's_ratio', 'stock', 'o_touch', 't_touch', 'c_touch', 'heavy', 'srp', 'nsrp',
     'full_pallet', 'mu', 'single_pick', 'secondary_srp', 'secondary_nsrp', 'clipstrip'] # 8. Calculate parameters part 1
     repl_parameters = Repl_dataset[cols].copy()
-    
     x = ['Clip_Strip_ratio', 'Sec_NSRP_ratio', 'Sec_SRP_ratio', 'Capping_Shelf_ratio', 'Backstock_ratio', 'One_Touch_ratio']
     y = ['clipstrip', 'secondary_nsrp', 'secondary_srp', 'c_touch', 't_touch', 'o_touch']
-    
     for i, j in zip(x, y):
         ParamCalc_a(repl_parameters, i, j)
-    
     x = ['Heavy_ratio', 'SRP_ratio', 'NSRP_ratio', 'Full_Pallet_ratio', 'MU_ratio', 'Single_Pick_ratio'] # 9. Calculate parameters part 2
     y = ['heavy', 'srp', 'nsrp', 'full_pallet', 'mu', 'single_pick']
-    
     for i, j in zip(x, y):
         ParamCalc_b(repl_parameters, i, j)
-    
     dataset[(dataset.srp==0)&(dataset.nsrp==0)&(dataset.full_pallet==0)&(dataset.mu==0)&(dataset.foil==0)].pmg.unique() # here we have to get no pmgs <-- put is somwhere on the end of the script
     tpn_count = repl_parameters[['store', 'pmg', 'tpn']] # Sumarizing value in PMG level; Add Active Lines; remove unnecesary columns
     tpn_count = tpn_count.drop_duplicates()
@@ -216,49 +196,39 @@ def ReplenishmentParameters(folder,Repl_Dataset,sold_units_days,backstock_target
     final_parameters = final_parameters.merge(tpn_count, on=['store', 'pmg'], how='left')
     final_parameters = final_parameters.merge(case_capacity_df, on=['store','pmg'], how='left')
     final_parameters['Case_Capacity'].fillna((final_parameters['Case_Capacity'].mean()),inplace=True)
-    
     averages_pmg = final_parameters.copy() # Making averages for missing PMGs. Firstly, I do it in pmg level, next in department level as sometimes we do not have even one TPN from PMG which might have some Volumes from Zsolt
     averages_pmg = averages_pmg.drop(['store'], axis=1)
     averages_pmg = averages_pmg.replace(np.nan,1)
     averages_pmg = averages_pmg.groupby(['pmg'], as_index=False).mean()
-    
     averages_dep = final_parameters.copy()
     averages_dep['dep'] = averages_dep.pmg.astype(str).str[:3]
     averages_dep['dep'] = np.where((averages_dep.pmg=='HDL01'),'NEW',averages_dep.dep)
     averages_dep = averages_dep.drop(['store'], axis=1)
     averages_dep = averages_dep.replace(np.nan,1)
     averages_dep = averages_dep.groupby(['dep'], as_index=False).mean()
-    
     final_parameters = store_inputs.merge(final_parameters, on=['store', 'pmg'], how='left') # combining dataframe with opened stores and every valid PMG + NEWSPAPERS
     final_parameters.insert(2, "dep", final_parameters.pmg.astype(str).str[:3], True)
     final_parameters['dep'] = np.where((final_parameters.pmg=='HDL01'),'NEW',final_parameters.dep)
     final_parameters_A = final_parameters[final_parameters.One_Touch_ratio.notnull()] # NOT empty values:  Create separate dataframes with and without values
-    
     no_values_file_A = final_parameters[final_parameters.One_Touch_ratio.isnull()] # Empty values (pmg level): Fill no values with average numbers 
     no_values_file_A = pd.DataFrame(no_values_file_A, columns=['store', 'pmg', 'dep'])
     no_values_file_A = no_values_file_A.merge(averages_pmg, on=['pmg'], how='left')
     final_parameters_B = no_values_file_A[no_values_file_A.One_Touch_ratio.notnull()]
-    
     no_values_file_B = no_values_file_A[no_values_file_A.One_Touch_ratio.isnull()] # The rest of empty values (dept level):
     no_values_file_B = pd.DataFrame(no_values_file_B, columns=['store', 'pmg', 'dep'])
     no_values_file_B = no_values_file_B.merge(averages_dep, on=['dep'], how='left')
     final_parameters_C = no_values_file_B[no_values_file_B.One_Touch_ratio.notnull()]
     final_parameters_Newspaper = no_values_file_B[no_values_file_B.One_Touch_ratio.isnull()]
     final_parameters = pd.concat([final_parameters_A,final_parameters_B,final_parameters_C,final_parameters_Newspaper]).sort_values(['store', 'pmg'])
-    
     final_parameters = final_parameters.merge(pallet_capacity_df, on=['store', 'pmg'], how='left')
     final_parameters.Pallet_Capacity = np.where(final_parameters.dep=='NEW', 1000, final_parameters.Pallet_Capacity) # Palet Capacity for Newspapers - to avoid empty cells in this department:
-    
     # removing Produce non-plano PMGs (in here we should calculate outputs just for PRO16 and PRO19):
-    td = {'pmg': ['PRO01', 'PRO02', 'PRO03', 'PRO04', 'PRO05', 'PRO06', 'PRO07', 'PRO08', 'PRO09', 'PRO10', 'PRO11', 'PRO12', 'PRO13', 
-    'PRO14', 'PRO15', 'PRO17', 'PRO18'], 
-    'to_del': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}
+    td = {'pmg': ['PRO01','PRO02','PRO03','PRO04','PRO05','PRO06','PRO07','PRO08','PRO09','PRO10','PRO11','PRO12','PRO13','PRO14','PRO15',
+                  'PRO17','PRO18'],'to_del': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}
     to_delete = pd.DataFrame(td) 
-    
     final_parameters = final_parameters.merge(to_delete, on='pmg', how='left')
     final_parameters = final_parameters.drop(final_parameters[final_parameters['to_del'] == 0].index, axis=0)
     final_parameters = final_parameters.drop(['to_del'], axis=1)
-    
     # [final_parameters.duplicated(keep=False)] # <-- we cannot use keep False as we remove all records 
     final_parameters = final_parameters.merge(cases, on=['store', 'pmg'], how='left')
     final_parameters = final_parameters.merge(products, on=['store', 'pmg'], how='left')
@@ -286,20 +256,17 @@ def ProduceParameters(folder,Repl_Dataset,inputs,sold_units_days,crates_per_modu
     produce_df = produce_df.rename(columns={'Pmg':'pmg'}) # temporary
     produce_modules = pd.read_excel(xls, 'produce_modules')
     produce_modules = produce_modules.rename(columns={'Country':'country','Store':'store'}) # temporary
-    
     produce_dataset = Repl_Dataset[['country', 'store', 'tpn', 'pmg', 'case_capacity', 'stock', 'sold_units', 'unit_type', 'weight']].copy()
     produce_dataset = produce_dataset[produce_dataset.pmg.str.contains('PRO')]
     produce_dataset.drop(Repl_Dataset[(Repl_Dataset.pmg=='PRO16')|(Repl_Dataset.pmg=='PRO19')].index, inplace=True) # removing PMGs which are in planogram (PRO16 and PRO19 <-- these PMGs are calculated in Parameters Customizing, as we have them in the planongram)
     RC_table = produce_df[['pmg', 'Replenishment_Type', 'RC_capacity']].copy()
     produce_dataset = produce_dataset.merge(produce_df, on='pmg', how='left')
-    
     # =============================================================================
     # Crates Customizing + Average Items in Case
     # - custom crates shows a total amount of LARGE CRATES. So, if we have 4 small crates then we treat them as 2 large
     # - daily_crates_on_stock = stock crates + sold crates
     # - items in case is necesary for categories replenished as an item 
     # =============================================================================
-    
     x = produce_dataset.groupby(['store', 'pmg', 'Replenishment_Type', 'unit_type']).sold_units.sum().reset_index()
     x = x.rename(columns = {'sold_units': 'total_sales'})
     produce_dataset = produce_dataset.merge(x, on=['store', 'pmg', 'Replenishment_Type', 'unit_type'], how='inner')
@@ -311,7 +278,6 @@ def ProduceParameters(folder,Repl_Dataset,inputs,sold_units_days,crates_per_modu
     produce_dataset['custom_stock_crates'] = np.where((produce_dataset.Crate_Size=='Other'), produce_dataset.custom_stock_crates/4,produce_dataset.custom_stock_crates)
     produce_dataset['daily_crates_on_stock'] = produce_dataset.custom_sold_crates + produce_dataset.custom_stock_crates # daily_stock = stock on the end of a day + what they sold this day
     produce_dataset['items_in_case'] = (produce_dataset.sold_units / produce_dataset.total_sales) * produce_dataset.case_capacity
-    
     # =============================================================================
     # Capacity
     # - custom_crates_on_stock = total of daily crates on stock (daily sold crates + daily stock)
@@ -321,7 +287,6 @@ def ProduceParameters(folder,Repl_Dataset,inputs,sold_units_days,crates_per_modu
     #     2. amount of crates per tpn. If we have more than 4 crates per TPN then we put it to warehouse (we have a place just for 4 tpns per one TPN) 
     # - backstock = is calculated based on custom_crates_on_stock. So it is daily sold crates + daily stock
     # =============================================================================
-    
     custom_crates_on_stock = produce_dataset.groupby(['store', 'pmg', 'Replenishment_Type', 'unit_type']).daily_crates_on_stock.sum().to_frame().reset_index()
     custom_tpn_on_stock = produce_dataset.groupby(['store', 'pmg', 'Replenishment_Type', 'unit_type']).tpn.count().to_frame().reset_index()
     custom_crates_on_stock = custom_crates_on_stock.merge(custom_tpn_on_stock, on=(['store', 'pmg', 'Replenishment_Type', 'unit_type']), how='left')
@@ -354,8 +319,7 @@ def ProduceParameters(folder,Repl_Dataset,inputs,sold_units_days,crates_per_modu
     dataset_group['product_stocked'] = dataset_group.product_stocked * (dataset_group.custom_sold_crates / dataset_group.total_sold_cases)
     dataset_group['sales'] = dataset_group.sales_excl_vat * (dataset_group.custom_sold_crates / dataset_group.total_sold_cases)
     dataset_group = dataset_group[['store', 'pmg', 'Replenishment_Type', 'unit_type', 'one_touch', 'backstock', 'cases_delivered',
-    'items_sold', 'product_stocked', 'sales', 'custom_sold_crates']]
-    
+                                   'items_sold', 'product_stocked', 'sales', 'custom_sold_crates']]
     dataset_group['shelf_filling'] = dataset_group.one_touch 
     dataset_group['crates_to_replenish'] = 0
     dataset_group['cycle_1']=np.where((((dataset_group['shelf_filling']-(sales_cycle[0]*dataset_group['custom_sold_crates']))/dataset_group['shelf_filling'])<fulfill_target),1,0)
@@ -373,13 +337,11 @@ def ProduceParameters(folder,Repl_Dataset,inputs,sold_units_days,crates_per_modu
     dataset_group['cycle_5']=np.where((((dataset_group['shelf_filling']-(sales_cycle[4]*dataset_group['custom_sold_crates']))/dataset_group['shelf_filling'])<fulfill_target),1,0)
     dataset_group['crates_to_replenish']=np.where(dataset_group['cycle_5']>0, (dataset_group['crates_to_replenish']+(dataset_group['one_touch']-dataset_group['shelf_filling'])+(dataset_group['custom_sold_crates']*sales_cycle[4])), dataset_group['crates_to_replenish'])
     dataset_group['shelf_filling']=np.where(dataset_group['cycle_5']>0, dataset_group['one_touch'], dataset_group['shelf_filling']-(dataset_group['custom_sold_crates']*sales_cycle[4]))
-    
     # =============================================================================
     # Weekly drivers calculation
     # - backstock_cases_replenished is required just to know how many times I need to move 
     # - backstock_rc shows amount of RCs which have to be moved on Shop-Floor (sometimes the same RC needs to be moved more than once). So it is NOT amount of RCs bout amout of stock movements
     # =============================================================================
-    
     dataset_group = dataset_group.merge(RC_table, on=['pmg', 'Replenishment_Type'], how='left')
     dataset_group['one_touch_cases'] = (dataset_group.one_touch/(dataset_group.one_touch+dataset_group.backstock))*dataset_group.cases_delivered
     dataset_group['backstock_cases'] = (dataset_group.backstock/(dataset_group.one_touch+dataset_group.backstock))*dataset_group.cases_delivered
@@ -956,3 +918,29 @@ def ReportBi(folder,time_values_new,repl_type_bool,dataset_new):
     if repl_type_bool == True:
         repl_type_df_new, repl_type_df_act = CalcReplType(dataset_new)
         pd.concat([repl_type_df_act,repl_type_df_new]).to_csv('Replenishment_Type_summary.csv',index=False)
+
+def NewStoresQ3(times,drivers):
+    ''' v25
+    We have 3 new stores without historical data so we just copy/paste data from benchmarked stores:
+        NEW STORE:	24159	BENCHMARK:	24152
+        NEW STORE:	24160	BENCHMARK:	24066
+        NEW STORE:	11081	BENCHMARK:	11078 (EXCL GM)
+    '''
+    Final_Drivers = drivers
+    Time_Value = times
+    Time_Value1 = Time_Value.drop(Time_Value[(Time_Value.Store==24159)|(Time_Value.Store==24160)|(Time_Value.Store==11081)].index).copy()
+    Time_Value2 = Time_Value1[(Time_Value1.Store==24152)|(Time_Value1.Store==24066)|(Time_Value1.Store==11078)].copy()
+    Time_Value2['Store'] = np.where(Time_Value2.Store==24152,24159,Time_Value2.Store)
+    Time_Value2['Store'] = np.where(Time_Value2.Store==24066,24160,Time_Value2.Store)
+    Time_Value2['Store'] = np.where(Time_Value2.Store==11078,11081,Time_Value2.Store)
+    Time_Value2 = Time_Value2.drop(Time_Value2[(Time_Value2.Store==11081)&(Time_Value2.Dep=='HDL')].index)
+    Time_Value = pd.concat([Time_Value1,Time_Value2])
+
+    Final_Drivers1 = Final_Drivers.drop(Final_Drivers[(Final_Drivers.Store==24159)| (Final_Drivers.Store==24160)|(Final_Drivers.Store==11081)].index).copy()
+    Final_Drivers2 = Final_Drivers1[(Final_Drivers1.Store==24152)| (Final_Drivers1.Store==24066)|(Final_Drivers1.Store==11078)].copy()
+    Final_Drivers2['Store'] = np.where(Final_Drivers2.Store==24152,24159,Final_Drivers2.Store)
+    Final_Drivers2['Store'] = np.where(Final_Drivers2.Store==24066,24160,Final_Drivers2.Store)
+    Final_Drivers2['Store'] = np.where(Final_Drivers2.Store==11078,11081,Final_Drivers2.Store)
+    Final_Drivers2 = Final_Drivers2.drop(Final_Drivers2[(Final_Drivers2.Store==11081)&(Final_Drivers2.Dep=='HDL')].index)    
+    Final_Drivers = pd.concat([Final_Drivers1,Final_Drivers2])
+    return Time_Value, Final_Drivers

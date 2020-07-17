@@ -15,6 +15,7 @@ def CurrentTime():
 def CalcTime(time_start,time_stop,text):
     executed_time = time_stop-time_start
     return print(text + str(executed_time))
+startCode = CurrentTime()
 
 # File versions
 version_base = 'Q3'
@@ -29,7 +30,6 @@ ops_dev_f = 'Model_Datasets/OpsDev_XI_2019.zip'
 
 volumes_f = f'Model_Datasets/Volumes_2019_{version_base}.xlsx' # Volumes_2019_adjusted2_newStores.xlsx (the same volumes like in P82019 + new stores)
 excel_inputs_f = f'Model_Inputs/Stores_Inputs_{version_base}.xlsx' 
-#csv_inputs_f = f'Model_Datasets/stores_inputs_{version_base}.csv'
 pallet_capacity_f = f'Model_Datasets/Pallet_Capacity_{version_base}.csv'
 case_capacity_f = f'Model_Datasets/Case_Capacity_{version_base}.csv' 
 losses_f = f'Model_Datasets/Losses_X_2019_{version_base}.csv' # 30.09-27.10 + code 14
@@ -62,13 +62,15 @@ FULFILL_TARGET = 0.6
 
 # Model
 RUN_MODEL = True
-PARAM_OPEN_DATASET = False # if any of the below PARAM bool == True, True, False
-PARAM_REPLENISHMENT_FUNC = False # if we want to calc it based on some new inputs: True else False
-PARAM_PRODUCE_FUNC = False
-PARAM_RTC_FUNC = False
+PARAM_OPEN_DATASET = True # if any of the below PARAM bool == True, True, False
+PARAM_REPLENISHMENT_FUNC = True # if we want to calc it based on some new inputs: True else False
+PARAM_PRODUCE_FUNC = True
+PARAM_RTC_FUNC = True
+
 # Datasets
 VOLUMES_FUNC = False
 DATASET_TPN_FUNC = False
+
 # Save 
 DATASET_TPN_SAVE = False
 VOLUMES_SAVE = False
@@ -77,10 +79,12 @@ OPB_DEP_SAVE = True
 OPB_DIV_SAVE = False
 INSIGHT_SAVE = False
 MODEL_DRIVERS_SAVE = False
+
 # BI Report
 BI_REPORT = False
 REPL_TYPE = False # if we put True then we need a new ReplDataset table to calc New Repl Types
 
+# Create a dataframe for excel file with Drivers/Profiles
 store_inputs = rmf.StoreInputsCreator(directory,excel_inputs_f)
 
 if REPL_TYPE == True:
@@ -101,9 +105,8 @@ if DATASET_TPN_FUNC == True:
         dataset_tpn.to_csv(directory / file_name, index=False)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Replenishment Dataset TPN table has been created and saved. Executed Time (sec): " if DATASET_TPN_SAVE == True else "Replenishment Dataset TPN table has been created and not saved. Executed Time (sec): ")
-'''
-Run the Replenishment Model:
-'''
+
+# Run the Replenishment Model:
 if RUN_MODEL == True:
     time_start = CurrentTime()
     if PARAM_OPEN_DATASET == True:
@@ -131,6 +134,7 @@ if RUN_MODEL == True:
     Rtc_Drivers = rmf.RtcDrivers(Parameters_Rtc_Waste,store_inputs)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"RTC Table is ready. Executed Time (sec): ")
+    
     # Finalizing Drivers
     Final_Drivers = rmf.FinalizingDrivers(directory,store_inputs,Parameters_Produce,Repl_Drivers,Produce_Drivers,Rtc_Drivers)
 
@@ -141,32 +145,8 @@ if RUN_MODEL == True:
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Time Values Dataframe is ready. Executed Time (sec): ")
     
-    # v25 - start
-    ''' v25
-    We have 3 new stores without historical data so we just copy/paste data from benchmarked stores:
-        NEW STORE:	24159	BENCHMARK:	24152
-        NEW STORE:	24160	BENCHMARK:	24066
-        NEW STORE:	11081	BENCHMARK:	11078 (EXCL GM)
-    '''
-    import numpy as np
-    Time_Value1 = Time_Value.drop(Time_Value[(Time_Value.Store==24159)|(Time_Value.Store==24160)|(Time_Value.Store==11081)].index).copy()
-    Time_Value2 = Time_Value1[(Time_Value1.Store==24152)|(Time_Value1.Store==24066)|(Time_Value1.Store==11078)].copy()
-    Time_Value2['Store'] = np.where(Time_Value2.Store==24152,24159,Time_Value2.Store)
-    Time_Value2['Store'] = np.where(Time_Value2.Store==24066,24160,Time_Value2.Store)
-    Time_Value2['Store'] = np.where(Time_Value2.Store==11078,11081,Time_Value2.Store)
-    Time_Value2 = Time_Value2.drop(Time_Value2[(Time_Value2.Store==11081)&(Time_Value2.Dep=='HDL')].index)
-    Time_Value = pd.concat([Time_Value1,Time_Value2])
-
-    Final_Drivers1 = Final_Drivers.drop(Final_Drivers[(Final_Drivers.Store==24159)| (Final_Drivers.Store==24160)|(Final_Drivers.Store==11081)].index).copy()
-    Final_Drivers2 = Final_Drivers1[(Final_Drivers1.Store==24152)| (Final_Drivers1.Store==24066)|(Final_Drivers1.Store==11078)].copy()
-    Final_Drivers2['Store'] = np.where(Final_Drivers2.Store==24152,24159,Final_Drivers2.Store)
-    Final_Drivers2['Store'] = np.where(Final_Drivers2.Store==24066,24160,Final_Drivers2.Store)
-    Final_Drivers2['Store'] = np.where(Final_Drivers2.Store==11078,11081,Final_Drivers2.Store)
-    Final_Drivers2 = Final_Drivers2.drop(Final_Drivers2[(Final_Drivers2.Store==11081)&(Final_Drivers2.Dep=='HDL')].index)    
-    Final_Drivers = pd.concat([Final_Drivers1,Final_Drivers2])
-    # v25 - end
-    
     # Summarizing Hours
+    Time_Value, Final_Drivers = rmf.NewStoresQ3(Time_Value,Final_Drivers)
     rmf.OutputsComparison(directory,Time_Value,act_model_outputs)
     opb_dep,opb_div,insight,final_drivers_csv = rmf.OperationProductivityBasics(Time_Value,Final_Drivers)
 
@@ -179,9 +159,8 @@ if RUN_MODEL == True:
         Final_Drivers_xlsx = Final_Drivers_xlsx.merge(stores_profiles,on='Store',how='left')
         Final_Drivers_xlsx['Dep'] = Final_Drivers_xlsx.Dep.apply(lambda x: 'GM' if x=='HDL' else x) # in the excel model I use GM instead HDL
         Final_Drivers_xlsx.to_excel(directory / file_name, index=False)
-    time_stop = CurrentTime()
-    CalcTime(time_start,time_stop,"Replenishment Drivers Dataframe is ready and saved. Executed Time (sec): " if EXCEL_DRIVERS_SAVE == True else "Replenishment Drivers Dataframe is ready and not saved. Executed Time (sec): ")    
- 
+    
+    # Outputs saving 
     if OPB_DEP_SAVE == True:
         file_name = f'Model_Outputs/OPB_DEP_{version_saved}.xlsx'
         opb_dep.to_excel(directory / file_name, index=False)
@@ -195,9 +174,15 @@ if RUN_MODEL == True:
         file_name = f'Model_Outputs/DRIVERS_{version_saved}.csv'
         final_drivers_csv.to_csv(directory / file_name, index=False)
     if BI_REPORT == True:
-        CalcTime(time_start,time_stop,"BI Report Inputs are saving now. Executed Time (sec): ")
+        #CalcTime(time_start,time_stop,"BI Report Inputs are saving now. Executed Time (sec): ")
         if REPL_TYPE == True:
             rmf.ReportBi(directory,Time_Value,REPL_TYPE,Repl_Dataset)
         else:
             Repl_Dataset = False
             rmf.ReportBi(directory,Time_Value,REPL_TYPE,Repl_Dataset)
+
+# Calc the final time for running the script
+endCode = CurrentTime()
+minCode = ((endCode-startCode)/60)//1
+secCode = round((((endCode-startCode)/60) - minCode)*60)
+print(f'Total Executed Time: {minCode} min {secCode} sec')
