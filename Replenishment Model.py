@@ -35,9 +35,6 @@ case_capacity_f = f'Model_Datasets/Case_Capacity_{version_base}.csv'
 losses_f = f'Model_Datasets/Losses_X_2019_{version_base}.csv' # 30.09-27.10 + code 14
 most_f = f'Model_Inputs/MOST_Replenishment_{version_base}.xlsb' 
 
-final_parameters_f = f'Parameters_Outputs/final_parameters_{version_base}.csv'
-produce_parameters_f = f'Parameters_Outputs/produce_parameters_{version_base}.csv'
-rtc_waste_f = f'Parameters_Outputs/Waste_RTC_{version_base}.csv'
 act_model_outputs = f'Model_Outputs/Model_Outputs_Q3_v1.xlsx' # Budgeted + ~2hrs on Produce because of Heavy/Light issue described in the summary file
 
 items_f = 'RawData/volumes_III_2020/sales_items_III_2020.csv'
@@ -62,22 +59,19 @@ FULFILL_TARGET = 0.6
 
 # Model
 RUN_MODEL = True
-PARAM_OPEN_DATASET = True # if any of the below PARAM bool == True, True, False
-PARAM_REPLENISHMENT_FUNC = True # if we want to calc it based on some new inputs: True else False
-PARAM_PRODUCE_FUNC = True
-PARAM_RTC_FUNC = True
 
 # Datasets
 VOLUMES_FUNC = False
+VOLUMES_SAVE = False
+
 DATASET_TPN_FUNC = False
+DATASET_TPN_SAVE = False
 
 # Save 
-DATASET_TPN_SAVE = False
-VOLUMES_SAVE = False
-EXCEL_DRIVERS_SAVE = False
 OPB_DEP_SAVE = True
 OPB_DIV_SAVE = False
 INSIGHT_SAVE = False
+EXCEL_DRIVERS_SAVE = False
 MODEL_DRIVERS_SAVE = False
 
 # BI Report
@@ -87,8 +81,6 @@ REPL_TYPE = False # if we put True then we need a new ReplDataset table to calc 
 # Create a dataframe for excel file with Drivers/Profiles
 store_inputs = rmf.StoreInputsCreator(directory,excel_inputs_f)
 
-if REPL_TYPE == True:
-    PARAM_OPEN_DATASET = True 
 if VOLUMES_FUNC == True:
     time_start = CurrentTime()
     volumes = rmf.VolumesCreator(directory,items_f,cases_f,lines_f,store_inputs)
@@ -108,29 +100,22 @@ if DATASET_TPN_FUNC == True:
 
 # Run the Replenishment Model:
 if RUN_MODEL == True:
+    # Parameters Calculations
     time_start = CurrentTime()
-    if PARAM_OPEN_DATASET == True:
-        Repl_Dataset = pd.read_csv(directory/repl_dataset_f,compression='zip')
-    if PARAM_REPLENISHMENT_FUNC == True:
-        Parameters_Repl = rmf.ReplenishmentParameters(directory,Repl_Dataset,SOLD_UNIT_DAYS,BACKSTOCK_TARGET,CASE_CAP_TARGET,store_inputs,pallet_capacity_f,volumes_f,case_capacity_f) 
-    else:
-        Parameters_Repl = pd.read_csv(directory/final_parameters_f)
+    Repl_Dataset = pd.read_csv(directory/repl_dataset_f,compression='zip')
+    Parameters_Repl = rmf.ReplenishmentParameters(directory,Repl_Dataset,SOLD_UNIT_DAYS,BACKSTOCK_TARGET,CASE_CAP_TARGET,store_inputs,pallet_capacity_f,volumes_f,case_capacity_f) 
     Repl_Drivers = rmf.ReplenishmentDrivers(Parameters_Repl,store_inputs,RC_CAPACITY)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Replenishment Parameters table is ready. Executed Time (sec): ")
+    
     time_start = CurrentTime()
-    if PARAM_PRODUCE_FUNC == True:
-        Parameters_Produce = rmf.ProduceParameters(directory,Repl_Dataset,excel_inputs_f,SOLD_UNIT_DAYS,MODULE_CRATES,TABLE_CRATES,volumes_f,SALES_CYCLE,FULFILL_TARGET,pallet_capacity_f)
-    else:
-        Parameters_Produce = pd.read_csv(directory/produce_parameters_f)
+    Parameters_Produce = rmf.ProduceParameters(directory,Repl_Dataset,excel_inputs_f,SOLD_UNIT_DAYS,MODULE_CRATES,TABLE_CRATES,volumes_f,SALES_CYCLE,FULFILL_TARGET,pallet_capacity_f)
     Produce_Drivers = rmf.ProduceDrivers(directory,Parameters_Produce,RC_DELIVERY,RC_VS_PAL_CAPACITY)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Produce Parameters table is ready. Executed Time (sec): ")
+    
     time_start = CurrentTime()
-    if PARAM_RTC_FUNC == True:
-        Parameters_Rtc_Waste = rmf.RtcParameters(directory,Repl_Dataset,losses_f,LOSS_UNIT_DAYS)
-    else:
-        Parameters_Rtc_Waste = pd.read_csv(directory/rtc_waste_f)
+    Parameters_Rtc_Waste = rmf.RtcParameters(directory,Repl_Dataset,losses_f,LOSS_UNIT_DAYS)
     Rtc_Drivers = rmf.RtcDrivers(Parameters_Rtc_Waste,store_inputs)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"RTC Table is ready. Executed Time (sec): ")
