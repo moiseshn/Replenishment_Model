@@ -69,9 +69,9 @@ DATASET_TPN_SAVE = False
 
 # Save 
 OPB_DEP_SAVE = True
-OPB_DIV_SAVE = False
+OPB_DIV_SAVE = True
 INSIGHT_SAVE = False
-EXCEL_DRIVERS_SAVE = False
+EXCEL_DRIVERS_SAVE = True
 MODEL_DRIVERS_SAVE = False
 
 # BI Report
@@ -138,8 +138,7 @@ if RUN_MODEL == True:
     # Saving Tables from the model
     if EXCEL_DRIVERS_SAVE == True:
         file_name = f'Model_Outputs/Drivers_Final_{version_saved}.xlsx'
-        stores_profiles = pd.read_csv(directory/store_inputs) 
-        stores_profiles = stores_profiles[['Country','Store','Store Name','Plan Size','Format']].drop_duplicates() # in excel model we need these info
+        stores_profiles = store_inputs[['Country','Store','Store Name','Plan Size','Format']].drop_duplicates() # in excel model we need these info
         Final_Drivers_xlsx = Final_Drivers.copy()
         Final_Drivers_xlsx = Final_Drivers_xlsx.merge(stores_profiles,on='Store',how='left')
         Final_Drivers_xlsx['Dep'] = Final_Drivers_xlsx.Dep.apply(lambda x: 'GM' if x=='HDL' else x) # in the excel model I use GM instead HDL
