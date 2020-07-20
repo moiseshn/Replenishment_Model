@@ -944,3 +944,46 @@ def NewStoresQ3(times,drivers):
     Final_Drivers2 = Final_Drivers2.drop(Final_Drivers2[(Final_Drivers2.Store==11081)&(Final_Drivers2.Dep=='HDL')].index)    
     Final_Drivers = pd.concat([Final_Drivers1,Final_Drivers2])
     return Time_Value, Final_Drivers
+
+def Model_Summary_BI(time_values,quarter):
+    df_sort_tbl = time_values[['Dep', 'Suboperation', 'Activity_Group', 'Driver_1', 'Driver_2', 'Driver_3','Driver_4', 'Profile']].drop_duplicates()
+    df_sort_tbl = df_sort_tbl.melt(id_vars=['Dep', 'Suboperation', 'Activity_Group'], var_name=['no'], value_name='Driver')
+    df_sort_tbl.drop(columns={'no'},inplace=True)
+    df_sort_tbl = df_sort_tbl.drop_duplicates()
+    df_sort_tbl = df_sort_tbl[df_sort_tbl.Driver!='no_driver']
+    
+    ## Summary Tables (Hours and Drivers)
+    df = time_values[['Country','Format','Dep','Store','Suboperation','Activity_Group','V_F','hours','Yearly GBP','Driver_1','Driver_2','Driver_3','Driver_4',
+    'Profile','Driver_1_value','Driver_2_value','Driver_3_value','Driver_4_value','Profile_value']].copy()
+    df.rename(columns={'hours':'Hours'},inplace=True)
+    
+    df1 = df[['Country','Format','Dep','Store','Suboperation', 'Activity_Group','V_F','Hours','Yearly GBP','Driver_1','Driver_2','Driver_3','Driver_4','Profile']]
+    df1 = df1.melt(id_vars=['Country','Format','Dep','Store','Suboperation', 'Activity_Group','V_F','Hours','Yearly GBP'], var_name=['Drivers'], value_name='Driver').sort_values(['Store','Dep'])
+    
+    df2 = df[['Country','Format','Dep','Store','Suboperation','Activity_Group','V_F','Hours','Yearly GBP','Driver_1_value', 'Driver_2_value', 'Driver_3_value','Driver_4_value','Profile_value']]
+    df2 = df2.melt(id_vars=['Country','Format','Dep','Store','Suboperation','Activity_Group','V_F','Hours','Yearly GBP'], var_name=['Drivers'], value_name='Value').sort_values(['Store','Dep'])
+    df2 = df2[['Value']]
+    df3 = pd.concat([df1, df2], axis=1).drop_duplicates()
+    df3 = df3[df3.Hours>0]
+    
+    # Split the table for two different
+    # - Each Sub-operation has 4 drivers and 1 profile but the same Total Hours and Yearly GBP
+    # An example:
+    # df3[(df3.Store==11001)&(df3.Dep=='BWS')&(df3.Suboperation=='Walk from gate to WH back and forth')]
+    
+    # Table with Hours
+    df_hours = df3[['Store','Dep','Suboperation','Activity_Group','V_F','Hours','Yearly GBP']].drop_duplicates()
+    print(f'In the "df_hours" table we have {len(df_hours)} records. It is exactly {len(df3)/len(df_hours)} times less. As we have 4 Drivers and 1 profile')
+    
+    # Table with Drivers
+    df_drivers = df3[['Store','Dep','Driver','Value','Hours','Yearly GBP']].drop_duplicates()
+    df_drivers = df_drivers[df_drivers.Driver!='no_driver']
+    df_drivers = df_drivers.groupby(['Store','Dep','Driver','Value']).agg({'Hours':'sum','Yearly GBP':'sum'}).reset_index()
+    
+    # Warning!
+    #> We shouldn't use hours from "df_drivers" table as the hours are just for showing worth of each driver. If we want to see how many hours we have on stores, then we should use outputs from "df_hours" table
+    
+    # Add Quarter no.
+    df_hours['Quarter'] = quarter
+    df_drivers['Quarter'] = quarter
+    return df_sort_tbl, df_hours, df_drivers

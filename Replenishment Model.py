@@ -68,15 +68,15 @@ DATASET_TPN_FUNC = False
 DATASET_TPN_SAVE = False
 
 # Save 
-OPB_DEP_SAVE = True
-OPB_DIV_SAVE = True
+OPB_DEP_SAVE = False
+OPB_DIV_SAVE = False
 INSIGHT_SAVE = False
-EXCEL_DRIVERS_SAVE = True
+EXCEL_DRIVERS_SAVE = False
 MODEL_DRIVERS_SAVE = False
 
 # BI Report
-BI_REPORT = False
-REPL_TYPE = False # if we put True then we need a new ReplDataset table to calc New Repl Types
+BI_REPORT = True
+#REPL_TYPE = False # if we put True then we need a new ReplDataset table to calc New Repl Types
 
 # Create a dataframe for excel file with Drivers/Profiles
 store_inputs = rmf.StoreInputsCreator(directory,excel_inputs_f)
@@ -158,12 +158,15 @@ if RUN_MODEL == True:
         file_name = f'Model_Outputs/DRIVERS_{version_saved}.csv'
         final_drivers_csv.to_csv(directory / file_name, index=False)
     if BI_REPORT == True:
-        #CalcTime(time_start,time_stop,"BI Report Inputs are saving now. Executed Time (sec): ")
-        if REPL_TYPE == True:
-            rmf.ReportBi(directory,Time_Value,REPL_TYPE,Repl_Dataset)
-        else:
-            Repl_Dataset = False
-            rmf.ReportBi(directory,Time_Value,REPL_TYPE,Repl_Dataset)
+        df_sort_tbl, df_hours, df_drivers = rmf.Model_Summary_BI(Time_Value,version_base)
+        df_hours.to_csv(f'SummaryBI_hours_{version_saved}.csv',index=False)
+        df_drivers.to_csv(f'SummaryBI_drivers_{version_saved}.csv',index=False)
+        df_sort_tbl.to_csv(f'Model_Comparison_SortingTable_{version_saved}.csv',index=False)
+        #if REPL_TYPE == True:
+        #    rmf.ReportBi(directory,Time_Value,REPL_TYPE,Repl_Dataset)
+        #else:
+        #    Repl_Dataset = False
+        #    rmf.ReportBi(directory,Time_Value,REPL_TYPE,Repl_Dataset)
 
 # Calc the final time for running the script
 endCode = CurrentTime()
