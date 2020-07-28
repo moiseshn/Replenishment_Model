@@ -19,7 +19,7 @@ startCode = CurrentTime()
 
 # File versions
 version_base = 'Q3'
-version_saved = 'Q3_v2' 
+version_saved = 'Q3_26weeks' 
 
 directory = Path("C:/D/#PRACA/ReplModel/")
 repl_dataset_f = "Model_Datasets/Repl_Dataset_2019.zip"
@@ -28,7 +28,7 @@ items_sold_f = 'Model_Datasets/ItemsSold_X_2019.zip' # 30.09-27.10
 stock_f = 'Model_Datasets/Stock_X_2019.zip' # 30.09-27.10
 ops_dev_f = 'Model_Datasets/OpsDev_XI_2019.zip'
 
-volumes_f = f'Model_Datasets/Volumes_2019_{version_base}.xlsx' # Volumes_2019_adjusted2_newStores.xlsx (the same volumes like in P82019 + new stores)
+volumes_f = f'Model_Datasets/Volumes_2019_Q3_26weeks.xlsx' # Q3_26weeks
 excel_inputs_f = f'Model_Inputs/Stores_Inputs_{version_base}.xlsx' 
 pallet_capacity_f = f'Model_Datasets/Pallet_Capacity_{version_base}.csv'
 case_capacity_f = f'Model_Datasets/Case_Capacity_{version_base}.csv' 
