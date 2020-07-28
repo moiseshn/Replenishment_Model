@@ -32,10 +32,10 @@ volumes_f = f'Model_Datasets/Volumes_2019_{version_base}.xlsx' # Volumes_2019_ad
 excel_inputs_f = f'Model_Inputs/Stores_Inputs_{version_base}.xlsx' 
 pallet_capacity_f = f'Model_Datasets/Pallet_Capacity_{version_base}.csv'
 case_capacity_f = f'Model_Datasets/Case_Capacity_{version_base}.csv' 
-losses_f = f'Model_Datasets/Losses_X_2019_{version_base}.csv' # 30.09-27.10 + code 14
+losses_f = f'Model_Datasets/Losses_P4_2020.csv' # Q3_v2 1.06-5.07 (P4.2020; 35 days) incl. code 14 as 544
 most_f = f'Model_Inputs/MOST_Replenishment_{version_base}.xlsb' 
 
-act_model_outputs = f'Model_Outputs/Model_Outputs_Q3_v1.xlsx' # Budgeted + ~2hrs on Produce because of Heavy/Light issue described in the summary file
+act_model_outputs = f'Model_Outputs/Model_Outputs_{version_base}.xlsx' 
 
 items_f = 'RawData/volumes_III_2020/sales_items_III_2020.csv'
 cases_f = 'RawData/volumes_III_2020/cases_delivered_III_2020.csv'
@@ -48,7 +48,7 @@ RC_VS_PAL_CAPACITY = 0.62
 PRE_SORT = 0.06
 REX_ALLOWANCE = 4
 SOLD_UNIT_DAYS = 7
-LOSS_UNIT_DAYS = 28
+LOSS_UNIT_DAYS = 35 # Q3_v2
 RC_Capacity_Ratio = (1+(1-0.62))
 BACKSTOCK_TARGET = 0.4
 CASE_CAP_TARGET = 40
@@ -75,7 +75,7 @@ EXCEL_DRIVERS_SAVE = False
 MODEL_DRIVERS_SAVE = False
 
 # BI Report
-BI_REPORT = True
+BI_REPORT = False
 #REPL_TYPE = False # if we put True then we need a new ReplDataset table to calc New Repl Types
 
 # Create a dataframe for excel file with Drivers/Profiles
