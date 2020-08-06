@@ -946,6 +946,7 @@ def NewStoresQ3(times,drivers):
     return Time_Value, Final_Drivers
 
 def Model_Summary_BI(time_values,quarter):
+    ## Model Comparison Sorting Table
     df_sort_tbl = time_values[['Dep', 'Suboperation', 'Activity_Group', 'Driver_1', 'Driver_2', 'Driver_3','Driver_4', 'Profile']].drop_duplicates()
     df_sort_tbl = df_sort_tbl.melt(id_vars=['Dep', 'Suboperation', 'Activity_Group'], var_name=['no'], value_name='Driver')
     df_sort_tbl.drop(columns={'no'},inplace=True)
