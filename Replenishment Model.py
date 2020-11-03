@@ -19,7 +19,7 @@ startCode = CurrentTime()
 
 # File versions
 version_base = 'Q3'
-version_saved = 'Q3_26weeks' 
+version_saved = 'Yellow_labeled_Bags' 
 
 directory = Path("C:/D/#PRACA/ReplModel/")
 repl_dataset_f = "Model_Datasets/Repl_Dataset_2019.zip"
@@ -29,13 +29,13 @@ stock_f = 'Model_Datasets/Stock_X_2019.zip' # 30.09-27.10
 ops_dev_f = 'Model_Datasets/OpsDev_XI_2019.zip'
 
 volumes_f = f'Model_Datasets/Volumes_2019_Q3_26weeks.xlsx' # Q3_26weeks
-excel_inputs_f = f'Model_Inputs/Stores_Inputs_{version_base}.xlsx' 
+excel_inputs_f = 'C:/D/#PRACA/ReplModel_2021/Model_Inputs/Stores_Inputs_2021.xlsx' 
 pallet_capacity_f = f'Model_Datasets/Pallet_Capacity_{version_base}.csv'
 case_capacity_f = f'Model_Datasets/Case_Capacity_{version_base}.csv' 
 losses_f = f'Model_Datasets/Losses_P4_2020.csv' # Q3_v2 1.06-5.07 (P4.2020; 35 days) incl. code 14 as 544
-most_f = f'Model_Inputs/MOST_Replenishment_{version_base}.xlsb' 
+most_f = 'C:/D/#PRACA/ReplModel_2021/Model_Inputs/MOST_Replenishment_2021_change5.xlsb' 
 
-act_model_outputs = f'Model_Outputs/Model_Outputs_{version_base}.xlsx' 
+act_model_outputs = f'Model_Outputs/Model_Outputs_Q3_26weeks.xlsx' 
 
 items_f = 'RawData/volumes_III_2020/sales_items_III_2020.csv'
 cases_f = 'RawData/volumes_III_2020/cases_delivered_III_2020.csv'
@@ -110,7 +110,7 @@ if RUN_MODEL == True:
     
     time_start = CurrentTime()
     Parameters_Produce = rmf.ProduceParameters(directory,Repl_Dataset,excel_inputs_f,SOLD_UNIT_DAYS,MODULE_CRATES,TABLE_CRATES,volumes_f,SALES_CYCLE,FULFILL_TARGET,pallet_capacity_f)
-    Produce_Drivers = rmf.ProduceDrivers(directory,Parameters_Produce,RC_DELIVERY,RC_VS_PAL_CAPACITY)
+    Produce_Drivers = rmf.ProduceDrivers(directory,store_inputs,Parameters_Produce,RC_DELIVERY,RC_VS_PAL_CAPACITY)
     time_stop = CurrentTime()
     CalcTime(time_start,time_stop,"Produce Parameters table is ready. Executed Time (sec): ")
     
@@ -137,7 +137,7 @@ if RUN_MODEL == True:
 
     # Saving Tables from the model
     if EXCEL_DRIVERS_SAVE == True:
-        file_name = f'Model_Outputs/Drivers_Final_{version_saved}.xlsx'
+        file_name = 'C:/D/#PRACA/ReplModel_2021/Model_Inputs/Drivers_Final_change7.xlsx'
         stores_profiles = store_inputs[['Country','Store','Store Name','Plan Size','Format']].drop_duplicates() # in excel model we need these info
         Final_Drivers_xlsx = Final_Drivers.copy()
         Final_Drivers_xlsx = Final_Drivers_xlsx.merge(stores_profiles,on='Store',how='left')

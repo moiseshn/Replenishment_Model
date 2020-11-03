@@ -59,7 +59,7 @@ def ReplDatasetTpn(folder,store_inputs,planogram_f,stock_f,ops_dev_f,items_sold_
     store_inputs.columns = map(str.lower, store_inputs.columns)
     store_inputs.rename(columns={'pmg name':'pmg_name'},inplace=True)
     store_inputs = store_inputs[['country', 'store', 'pmg', 'pmg_name', 'division','is_capping_shelf']].drop_duplicates()
-    planogram = pd.read_csv(folder / planogram_f, sep=';')
+    planogram = pd.read_csv(folder / planogram_f, sep=',')
     planogram = planogram[['store', 'tpnb', 'icase', 'capacity']]
     planogram = planogram.drop_duplicates(subset=['tpnb', 'icase', 'store', 'capacity'])
     opsdev = pd.read_csv(folder / ops_dev_f, sep=';')
@@ -472,7 +472,7 @@ def ReplenishmentDrivers(parameters_df,inputs,RC_Capacity_Ratio):
     Drivers['Replenished Rollcages'] = np.where(Drivers.Pmg=='HDL01', 5, Drivers['Replenished Rollcages'])
     return Drivers
 
-def ProduceDrivers(folder,parameters_df,RC_delivery_ratio,RC_vs_Pallet_capacity):
+def ProduceDrivers(folder,inputs,parameters_df,RC_delivery_ratio,RC_vs_Pallet_capacity):
     produce_parameters = parameters_df.copy()
     produce_driveres = produce_parameters.groupby(['Store','Pmg']).cases_delivered.sum().reset_index()
 
@@ -590,6 +590,10 @@ def ProduceDrivers(folder,parameters_df,RC_delivery_ratio,RC_vs_Pallet_capacity)
     x = x.rename(columns={'one_touch_rc': 'Flowers Pallets'})
     x['Flowers Pallets'] = (x['Flowers Pallets'] - (x['Flowers Pallets'] * RC_delivery_ratio)) * RC_vs_Pallet_capacity
     produce_driveres = produce_driveres.merge(x, on=['Store', 'Pmg'], how='left')
+    
+    stores_df = inputs.copy()
+    stores_df = stores_df[['Store']].drop_duplicates()
+    produce_driveres = produce_driveres.merge(stores_df,on='Store',how='inner')
     return produce_driveres
 
 def RtcDrivers(rtc_waste_df,inputs):
@@ -611,6 +615,36 @@ def RtcDrivers(rtc_waste_df,inputs):
     RTC_Waste_table['Food Donation Bulk (one bag)'] = np.where(((RTC_Waste_table.code == 544)&(RTC_Waste_table.unit_type == 'KG')&(RTC_Waste_table.Dep == 'PRO')), RTC_Waste_table['amount'], 0)
     RTC_Waste_table = RTC_Waste_table.groupby(['Store', 'Pmg', 'Dep']).agg({'RTC Lines': 'sum', 'Waste Lines': 'sum',
     'Food Donation Lines': 'sum', 'RTC Items': 'sum','Waste Items': 'sum', 'Food Donation Items': 'sum','Waste Bulk (one bag)': 'sum', 'Food Donation Bulk (one bag)': 'sum'}).reset_index()    
+    
+    """
+    In here we have a change related with yelow labeled bags. In October 2020 I have calculated that 67% of code 544
+    will not be send anymore, but it will be labeled and replenished like RTC items.
+    The change is called: "Yellow Labeled Bags"
+    I have added 2 drivers: RTC (Produce Bags), RTC (Produce Items)
+    
+    Chosen PMGs:
+    PRO01 Bananas 
+    PRO02 Apples, Peaches, Tomatoes and Peppers 
+    PRO03 Citrus 
+    PRO04 Melones 
+    PRO05 Exotic Fruit and Vegetable 
+    PRO06 Organic PRO 
+    PRO07 Berries and Grapes 
+    PRO08 Potatoes and Onions 
+    PRO09 Root Vegetable 
+    """
+    chosen_pmgs = ['PRO01','PRO02','PRO03','PRO04','PRO05','PRO06','PRO07','PRO08','PRO09']
+    yell_bag_ratio = 0.67
+    yell_bag_capacity = 0.2
+    
+    RTC_Waste_table['RTC (Produce Items)'] = np.where(RTC_Waste_table['Pmg'].isin(chosen_pmgs), RTC_Waste_table['Food Donation Items'] *  yell_bag_ratio, 0)
+    RTC_Waste_table['RTC (Produce Bags)'] = np.where(RTC_Waste_table['Pmg'].isin(chosen_pmgs), RTC_Waste_table['RTC (Produce Items)'] / yell_bag_capacity, 0)
+    
+    # decreasing Food Donation once we have yell_bag_ratio transfered to yellow labeled bags:
+    RTC_Waste_table['Food Donation Items'] = np.where(RTC_Waste_table['Pmg'].isin(chosen_pmgs), RTC_Waste_table['Food Donation Items'] * (1 - yell_bag_ratio), RTC_Waste_table['Food Donation Items'])
+    RTC_Waste_table['Food Donation Lines'] = np.where(RTC_Waste_table['Pmg'].isin(chosen_pmgs), RTC_Waste_table['Food Donation Lines'] * (1 - yell_bag_ratio), RTC_Waste_table['Food Donation Lines'])
+    RTC_Waste_table['Food Donation Bulk (one bag)'] = np.where(RTC_Waste_table['Pmg'].isin(chosen_pmgs), RTC_Waste_table['Food Donation Bulk (one bag)'] * (1 - yell_bag_ratio), RTC_Waste_table['Food Donation Bulk (one bag)'])
+    RTC_Waste_table['Food Donation (available)'] = np.where((RTC_Waste_table['Pmg'].isin(chosen_pmgs))&(RTC_Waste_table['Food Donation Items'] > 0), 1, 0)
     return RTC_Waste_table
 
 def FinalizingDrivers(folder,store_inputs,produce_parameters,repl_drivers,produce_drivers,rtc_drivers):
@@ -624,7 +658,7 @@ def FinalizingDrivers(folder,store_inputs,produce_parameters,repl_drivers,produc
                              'Trading Days - CAYG','Banana Hammock','Fresh CCLB TPN','Prepicked HL item','Trading Days - Dot Com',
                              'Night Fill','Red Labels','GBP_rates','Multifloor allowance','Pre-sort by other depts',
                              'Stock Movement for Bakery and Counter','Stores without counters','VIP replenishment',
-							 'Check Fridge Temperature','MULTIFLOOR','EPW items','EPW Lines','MelonCitrus']].drop_duplicates()
+							 'Check Fridge Temperature','MULTIFLOOR','EPW items','EPW Lines','MelonCitrus', 'Expired Newpapers (TPN)','Remitenda']].drop_duplicates()
     Final_Drivers = repl_drivers.append(produce_drivers, sort=False)
     Final_Drivers = Final_Drivers.merge(rtc_drivers, on=['Store', 'Pmg', 'Dep'], how='left')
     Final_Drivers = Final_Drivers.fillna(0)
@@ -642,6 +676,7 @@ def FinalizingDrivers(folder,store_inputs,produce_parameters,repl_drivers,produc
     Final_Drivers['Add_Walking Pallets'] = Final_Drivers['Replenished Pallets']
     
     Final_Drivers = Final_Drivers.groupby(['Store','Dep'], as_index=False).sum()
+    Final_Drivers['Food Donation (available)'] = Final_Drivers['Food Donation (available)'].apply(lambda x: 1 if x > 0 else 0) # produce labeled bags
     mods_no = dep_profiles[['Store', 'Dep', 'Number of Modules','ProductReturns_factor']].drop_duplicates()
     Final_Drivers = Final_Drivers.merge(mods_no, on=['Store', 'Dep'], how='left')
     Final_Drivers['Product Returns'] = np.where(Final_Drivers.ProductReturns_factor>0,Final_Drivers['Items Sold']/Final_Drivers.ProductReturns_factor,0)
@@ -805,7 +840,7 @@ def HoursCalculation(folder,store_inputs,df_times,RelaxationAllowance):
                              'Trading Days - CAYG','Banana Hammock','Fresh CCLB TPN','Prepicked HL item','Trading Days - Dot Com',
                              'Night Fill','Red Labels','GBP_rates','Multifloor allowance','Pre-sort by other depts',
                              'Stock Movement for Bakery and Counter','Stores without counters','VIP replenishment',
-							 'Check Fridge Temperature','MULTIFLOOR','EPW items','EPW Lines','MelonCitrus']].drop_duplicates()
+							 'Check Fridge Temperature','MULTIFLOOR','EPW items','EPW Lines','MelonCitrus','Expired Newpapers (TPN)','Remitenda']].drop_duplicates()
     division_df=dep_profiles[['Store','Dep','Division','GBP_rates']].drop_duplicates()
     hours_df = hours_df.merge(division_df, on=['Store','Dep'], how='left')
     hours_df['Yearly GBP'] = hours_df.GBP_rates*hours_df.hours*52
