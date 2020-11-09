@@ -658,7 +658,8 @@ def FinalizingDrivers(folder,store_inputs,produce_parameters,repl_drivers,produc
                              'Trading Days - CAYG','Banana Hammock','Fresh CCLB TPN','Prepicked HL item','Trading Days - Dot Com',
                              'Night Fill','Red Labels','GBP_rates','Multifloor allowance','Pre-sort by other depts',
                              'Stock Movement for Bakery and Counter','Stores without counters','VIP replenishment',
-							 'Check Fridge Temperature','MULTIFLOOR','EPW items','EPW Lines','MelonCitrus', 'Expired Newpapers (TPN)','Remitenda']].drop_duplicates()
+							 'Check Fridge Temperature','MULTIFLOOR','EPW items','EPW Lines','MelonCitrus', 'Expired Newpapers (TPN)','Remitenda',
+							 'HU Flags Ratio','HU Flags']].drop_duplicates()
     Final_Drivers = repl_drivers.append(produce_drivers, sort=False)
     Final_Drivers = Final_Drivers.merge(rtc_drivers, on=['Store', 'Pmg', 'Dep'], how='left')
     Final_Drivers = Final_Drivers.fillna(0)
@@ -840,7 +841,8 @@ def HoursCalculation(folder,store_inputs,df_times,RelaxationAllowance):
                              'Trading Days - CAYG','Banana Hammock','Fresh CCLB TPN','Prepicked HL item','Trading Days - Dot Com',
                              'Night Fill','Red Labels','GBP_rates','Multifloor allowance','Pre-sort by other depts',
                              'Stock Movement for Bakery and Counter','Stores without counters','VIP replenishment',
-							 'Check Fridge Temperature','MULTIFLOOR','EPW items','EPW Lines','MelonCitrus','Expired Newpapers (TPN)','Remitenda']].drop_duplicates()
+							 'Check Fridge Temperature','MULTIFLOOR','EPW items','EPW Lines','MelonCitrus','Expired Newpapers (TPN)','Remitenda',
+							 'HU Flags Ratio','HU Flags']].drop_duplicates()
     division_df=dep_profiles[['Store','Dep','Division','GBP_rates']].drop_duplicates()
     hours_df = hours_df.merge(division_df, on=['Store','Dep'], how='left')
     hours_df['Yearly GBP'] = hours_df.GBP_rates*hours_df.hours*52
@@ -960,22 +962,26 @@ def NewStoresQ3(times,drivers):
         NEW STORE:	24159	BENCHMARK:	24152
         NEW STORE:	24160	BENCHMARK:	24066
         NEW STORE:	11081	BENCHMARK:	11078 (EXCL GM)
+		
+		NEW STORE (2020): 24161		BENCHMARK: 24044
     '''
     Final_Drivers = drivers
     Time_Value = times
-    Time_Value1 = Time_Value.drop(Time_Value[(Time_Value.Store==24159)|(Time_Value.Store==24160)|(Time_Value.Store==11081)].index).copy()
-    Time_Value2 = Time_Value1[(Time_Value1.Store==24152)|(Time_Value1.Store==24066)|(Time_Value1.Store==11078)].copy()
+    Time_Value1 = Time_Value.drop(Time_Value[(Time_Value.Store==24159)|(Time_Value.Store==24160)|(Time_Value.Store==11081)|(Time_Value.Store==24161)].index).copy()
+    Time_Value2 = Time_Value1[(Time_Value1.Store==24152)|(Time_Value1.Store==24066)|(Time_Value1.Store==11078)|(Time_Value1.Store==24044)].copy()
     Time_Value2['Store'] = np.where(Time_Value2.Store==24152,24159,Time_Value2.Store)
     Time_Value2['Store'] = np.where(Time_Value2.Store==24066,24160,Time_Value2.Store)
     Time_Value2['Store'] = np.where(Time_Value2.Store==11078,11081,Time_Value2.Store)
+    Time_Value2['Store'] = np.where(Time_Value2.Store==24044,24161,Time_Value2.Store)
     Time_Value2 = Time_Value2.drop(Time_Value2[(Time_Value2.Store==11081)&(Time_Value2.Dep=='HDL')].index)
     Time_Value = pd.concat([Time_Value1,Time_Value2])
 
-    Final_Drivers1 = Final_Drivers.drop(Final_Drivers[(Final_Drivers.Store==24159)| (Final_Drivers.Store==24160)|(Final_Drivers.Store==11081)].index).copy()
-    Final_Drivers2 = Final_Drivers1[(Final_Drivers1.Store==24152)| (Final_Drivers1.Store==24066)|(Final_Drivers1.Store==11078)].copy()
+    Final_Drivers1 = Final_Drivers.drop(Final_Drivers[(Final_Drivers.Store==24159)| (Final_Drivers.Store==24160)|(Final_Drivers.Store==11081)|(Final_Drivers.Store==24161)].index).copy()
+    Final_Drivers2 = Final_Drivers1[(Final_Drivers1.Store==24152)| (Final_Drivers1.Store==24066)|(Final_Drivers1.Store==11078)|(Final_Drivers1.Store==24044)].copy()
     Final_Drivers2['Store'] = np.where(Final_Drivers2.Store==24152,24159,Final_Drivers2.Store)
     Final_Drivers2['Store'] = np.where(Final_Drivers2.Store==24066,24160,Final_Drivers2.Store)
     Final_Drivers2['Store'] = np.where(Final_Drivers2.Store==11078,11081,Final_Drivers2.Store)
+    Final_Drivers2['Store'] = np.where(Final_Drivers2.Store==24044,24161,Final_Drivers2.Store)
     Final_Drivers2 = Final_Drivers2.drop(Final_Drivers2[(Final_Drivers2.Store==11081)&(Final_Drivers2.Dep=='HDL')].index)    
     Final_Drivers = pd.concat([Final_Drivers1,Final_Drivers2])
     return Time_Value, Final_Drivers
