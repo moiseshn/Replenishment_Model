@@ -63,7 +63,8 @@ def ReplDatasetTpn(folder,store_inputs,planogram_f,stock_f,ops_dev_f,items_sold_
     planogram = planogram[['store', 'tpnb', 'icase', 'capacity']]
     planogram = planogram.drop_duplicates(subset=['tpnb', 'icase', 'store', 'capacity'])
     opsdev = pd.read_csv(folder / ops_dev_f, sep=';')
-    opsdev['srp'] = np.where(((opsdev.srp==0)&(opsdev.nsrp==0)), (opsdev.half_pallet+opsdev.split_pallet), opsdev.srp) # temporary: half_pallet & split_palet == srp
+    opsdev['srp'] = np.where(((opsdev.srp==0)&(opsdev.nsrp==0)), opsdev.split_pallet, opsdev.srp) # split_palet == srp
+    opsdev['mu'] = np.where(opsdev.half_pallet > 0, 1, opsdev.mu) # half_pallet and mu are the same
     stock = pd.read_csv(folder / stock_f, sep=',')
     stock.columns = stock.columns.str.replace('mbo_daily_stock_october.', '') # think how to change the name to variable. Maybe just do "names=colnames"
     stock = stock[['store', 'tpn', 'stock']]
@@ -72,7 +73,7 @@ def ReplDatasetTpn(folder,store_inputs,planogram_f,stock_f,ops_dev_f,items_sold_
     Repl_Dataset = Repl_Dataset.merge(opsdev, on=['tpnb', 'store'], how='left')
     Repl_Dataset = Repl_Dataset.merge(store_inputs, on=['country','store','pmg'], how='inner')
     Repl_Dataset = pd.DataFrame(Repl_Dataset, columns = ['country','store', 'tpn', 'tpnb', 'pmg', 'pmg_name', 'division', 'unit_type', 'is_capping_shelf', 
-    'case_capacity', 'weight', 'sold_units', 'sales_excl_vat', 'stock', 'srp', 'nsrp', 'full_pallet', 'mu', 'foil', 'half_pallet', 'split_pallet'])
+    'case_capacity', 'weight', 'sold_units', 'sales_excl_vat', 'stock', 'srp', 'nsrp', 'full_pallet', 'mu', 'foil'])
     Repl_Dataset = Repl_Dataset.replace(np.nan,0)
     Repl_Dataset['nsrp'] = np.where(((Repl_Dataset.srp==0)&(Repl_Dataset.nsrp==0)&(Repl_Dataset.full_pallet==0)&(Repl_Dataset.mu==0)), 1, Repl_Dataset['nsrp'])
     Repl_Dataset = Repl_Dataset.merge(planogram, on=['store', 'tpnb'], how='left') # plano and non plano
@@ -102,7 +103,7 @@ def ReplDatasetTpn(folder,store_inputs,planogram_f,stock_f,ops_dev_f,items_sold_
     Repl_Dataset['single_pick'] = 0 # change 1 
     Repl_Dataset = pd.DataFrame(Repl_Dataset, columns=['country', 'store', 'tpn', 'tpnb', 'pmg', 'pmg_name', 'division', 'unit_type', 
     'case_capacity', 'capacity', 'weight', 'sold_units', 'sales_excl_vat', 'stock', 'srp', 'nsrp', 'full_pallet', 'mu',
-    'foil', 'half_pallet', 'split_pallet', 'is_capping_shelf', 'single_pick'])
+    'foil', 'is_capping_shelf', 'single_pick'])
     return Repl_Dataset
 
 # Parameters
@@ -162,8 +163,10 @@ def ReplenishmentParameters(folder,Repl_Dataset,sold_units_days,backstock_target
     driver_list = ['sold_units', 'stock', 'capacity', 'secondary_nsrp', 'secondary_srp', 'clipstrip']
     for driver in driver_list:
         FoilCalculation(dataset_foil_nsrp,driver)
+    #dataset_foil_nsrp['Is_Foil'] = 1
     dataset_foil_srp = dataset_foil_nsrp.copy()
     dataset_foil_srp.srp = 1
+    dataset_foil_srp['Is_Foil'] = 1 # foil. Just half of the foil do not need to be opened
     dataset_foil_srp.nsrp = 0
     Repl_dataset = pd.concat([dataset_no_foil, dataset_foil_nsrp, dataset_foil_srp], ignore_index=True)
     Repl_dataset['shop_floor_capacity'] = (Repl_dataset.capacity+Repl_dataset.secondary_nsrp+Repl_dataset.secondary_srp+Repl_dataset.clipstrip) # 6. One/Two touch
@@ -177,14 +180,14 @@ def ReplenishmentParameters(folder,Repl_Dataset,sold_units_days,backstock_target
     Repl_dataset['s_ratio'] = Repl_dataset.sold_units / Repl_dataset.sales_ratio
     Repl_dataset = Repl_dataset.drop(['sales_ratio'], axis=1)
     cols = ['store', 'tpn', 'pmg', 's_ratio', 'stock', 'o_touch', 't_touch', 'c_touch', 'heavy', 'srp', 'nsrp',
-    'full_pallet', 'mu', 'single_pick', 'secondary_srp', 'secondary_nsrp', 'clipstrip'] # 8. Calculate parameters part 1
+    'Is_Foil','full_pallet', 'mu', 'single_pick', 'secondary_srp', 'secondary_nsrp', 'clipstrip'] # 8. Calculate parameters part 1
     repl_parameters = Repl_dataset[cols].copy()
     x = ['Clip_Strip_ratio', 'Sec_NSRP_ratio', 'Sec_SRP_ratio', 'Capping_Shelf_ratio', 'Backstock_ratio', 'One_Touch_ratio']
     y = ['clipstrip', 'secondary_nsrp', 'secondary_srp', 'c_touch', 't_touch', 'o_touch']
     for i, j in zip(x, y):
         ParamCalc_a(repl_parameters, i, j)
-    x = ['Heavy_ratio', 'SRP_ratio', 'NSRP_ratio', 'Full_Pallet_ratio', 'MU_ratio', 'Single_Pick_ratio'] # 9. Calculate parameters part 2
-    y = ['heavy', 'srp', 'nsrp', 'full_pallet', 'mu', 'single_pick']
+    x = ['Heavy_ratio', 'SRP_ratio', 'NSRP_ratio', 'Foil_Ratio','Full_Pallet_ratio', 'MU_ratio', 'Single_Pick_ratio'] # 9. Calculate parameters part 2
+    y = ['heavy', 'srp', 'nsrp', 'Is_Foil', 'full_pallet', 'mu', 'single_pick']
     for i, j in zip(x, y):
         ParamCalc_b(repl_parameters, i, j)
     dataset[(dataset.srp==0)&(dataset.nsrp==0)&(dataset.full_pallet==0)&(dataset.mu==0)&(dataset.foil==0)].pmg.unique() # here we have to get no pmgs <-- put is somwhere on the end of the script
@@ -434,6 +437,7 @@ def ReplenishmentDrivers(parameters_df,inputs,RC_Capacity_Ratio):
     Drivers['H_SRP'] = Drivers['Store Replenished Cases']*Drivers.Heavy_ratio*Drivers.New_SRP_ratio*(1-Drivers.Clip_Strip_ratio)
     Drivers['L_NSRP'] = Drivers['Store Replenished Cases']*(1-Drivers.Heavy_ratio)*Drivers.New_NSRP_ratio*(1-Drivers.Clip_Strip_ratio)
     Drivers['H_NSRP'] = Drivers['Store Replenished Cases']*Drivers.Heavy_ratio*Drivers.New_NSRP_ratio*(1-Drivers.Clip_Strip_ratio)
+    Drivers['Foil_Cases'] = Drivers['Store Replenished Cases'] * Drivers.Foil_Ratio # foil
     Drivers['Sec_SRP_cases'] = np.where(Drivers.New_SRP_ratio==0, Drivers['Store Replenished Cases']*Drivers.SRP_ratio, Drivers['Store Replenished Cases']*Drivers.Sec_SRP_ratio)
     Drivers['Sec_NSRP_cases'] = np.where(Drivers.New_NSRP_ratio==0, Drivers['Store Replenished Cases']*(1-Drivers.SRP_ratio), Drivers['Store Replenished Cases']*Drivers.Sec_NSRP_ratio)
     Drivers['Clip Strip Cases'] = Drivers.Clip_Strip_ratio*(Drivers['Store Replenished Cases']-(Drivers.Sec_SRP_cases+Drivers.Sec_NSRP_cases))
@@ -466,7 +470,7 @@ def ReplenishmentDrivers(parameters_df,inputs,RC_Capacity_Ratio):
     'Backstock Pallet Ratio','prack','AdditionalMovement','PalletDelivery','Tagged_Items','Store Name','Plan Size',
     'Clip_Strip_ratio','Sec_NSRP_ratio','Sec_SRP_ratio','Capping_Shelf_ratio','Backstock_ratio',
     'One_Touch_ratio','Heavy_ratio','SRP_ratio','NSRP_ratio','Case_Capacity','Pallet_Capacity',
-    'New_SRP_ratio','New_NSRP_ratio'], axis=1)
+    'New_SRP_ratio','New_NSRP_ratio','Foil_Ratio'], axis=1)
     Drivers = Drivers.groupby(['Store', 'Pmg', 'Dep'], as_index=False).sum()
     Drivers['New Delivery - Rollcages'] = np.where(Drivers.Pmg=='HDL01', 5, Drivers['New Delivery - Rollcages'])
     Drivers['Replenished Rollcages'] = np.where(Drivers.Pmg=='HDL01', 5, Drivers['Replenished Rollcages'])
@@ -723,10 +727,11 @@ def FinalizingDrivers(folder,store_inputs,produce_parameters,repl_drivers,produc
     benchmark_values.loc[0, 'Store'] = 44001
     benchmark_values = benchmark_values.iloc[:,1:]
     Final_Drivers = pd.concat([Final_Drivers, benchmark_values], axis=0)
-    
+    Final_Drivers['NonFoil_Ratio'] = 1 - (Final_Drivers['Foil_Cases'] / Final_Drivers['Store Replenished Cases']) # Foil 
+        
     Final_Drivers.drop(columns={'Two Touch Cases','Pallets Delivery Ratio','One Touch Cases','ProductReturns_factor',
                                 'GBP_rates','Flowers Rollcages','Division','Backstock_Frequency',
-                                'Backstock Pallet Ratio','ProductReturns_factor'},inplace=True) #we don't need it in the below pivot table
+                                'Backstock Pallet Ratio','ProductReturns_factor','Foil_Cases'},inplace=True) #we don't need it in the below pivot table
     Final_Drivers = Final_Drivers.replace(np.nan,0)
     return Final_Drivers
 
