@@ -22,7 +22,7 @@ version_base = 'Q3'
 version_saved = 'v31' 
 
 directory = Path("C:/D/#PRACA/2020/#Model_2020/")
-directory_new = Path("C:/D/#PRACA/ReplModel_2021/")
+directory_new = Path("C:/D/#PRACA/2021/#Model_2021/")
 repl_dataset_f = "Model_Datasets/Repl_Dataset_2019.zip"
 planogram_f = 'Model_Datasets/Planogram_IX_2019.zip'
 items_sold_f = 'Model_Datasets/ItemsSold_X_2019.zip' # 30.09-27.10
@@ -30,7 +30,7 @@ stock_f = 'Model_Datasets/Stock_X_2019.zip' # 30.09-27.10
 ops_dev_f = 'Model_Datasets/OpsDev_XI_2019.zip'
 
 volumes_f = f'Model_Datasets/Volumes_14weeks_2020_excl_promo.xlsx' # 14 Weeks from 2020 - weeks 14 - 27 (01.06.2020 - 06.09.2020) with excluded promo cases (data from Adri: SRD)
-excel_inputs_f = 'C:/D/#PRACA/ReplModel_2021/Model_Inputs/Stores_Inputs_2021.xlsx'
+excel_inputs_f = 'C:/D/#PRACA/2021/#Model_2021/Model_Inputs/Stores_Inputs_2021.xlsx'
 pallet_capacity_f = f'Model_Datasets/Pallet_Capacity_P8_2020.csv'
 case_capacity_f = f'Model_Datasets/Case_Capacity_P8_2020.csv' 
 losses_f = f'Model_Datasets/loss_p8_2020.zip' # P8 2020
