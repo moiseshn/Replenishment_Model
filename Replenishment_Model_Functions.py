@@ -672,7 +672,7 @@ def FinalizingDrivers(folder,store_inputs,produce_parameters,repl_drivers,produc
                              'Night Fill','Red Labels','GBP_rates','Multifloor allowance','Pre-sort by other depts',
                              'Stock Movement for Bakery and Counter','Stores without counters','VIP replenishment',
 							 'Check Fridge Temperature','MULTIFLOOR','EPW items','EPW Lines','MelonCitrus', 'Expired Newpapers (TPN)','Remitenda',
-							 'HU Flags Ratio','HU Flags','Scan and Shop Labels']].drop_duplicates()
+							 'HU Flags Ratio','HU Flags','Scan and Shop Labels','Sales (Dot Com)']].drop_duplicates()
     Final_Drivers = repl_drivers.append(produce_drivers, sort=False)
     Final_Drivers = Final_Drivers.merge(rtc_drivers, on=['Store', 'Pmg', 'Dep'], how='left')
     Final_Drivers = Final_Drivers.fillna(0)
@@ -866,7 +866,7 @@ def HoursCalculation(folder,store_inputs,df_times,RelaxationAllowance):
                              'Night Fill','Red Labels','GBP_rates','Multifloor allowance','Pre-sort by other depts',
                              'Stock Movement for Bakery and Counter','Stores without counters','VIP replenishment',
 							 'Check Fridge Temperature','MULTIFLOOR','EPW items','EPW Lines','MelonCitrus','Expired Newpapers (TPN)','Remitenda',
-							 'HU Flags Ratio','HU Flags','Scan and Shop Labels']].drop_duplicates()
+							 'HU Flags Ratio','HU Flags','Scan and Shop Labels','Sales (Dot Com)']].drop_duplicates()
     division_df=dep_profiles[['Store','Dep','Division','GBP_rates']].drop_duplicates()
     hours_df = hours_df.merge(division_df, on=['Store','Dep'], how='left')
     hours_df['Yearly GBP'] = hours_df.GBP_rates*hours_df.hours*52
@@ -1017,6 +1017,7 @@ def NewStoresQ3(times,drivers):
     return Time_Value, Final_Drivers
 
 def Model_Summary_BI(time_values,quarter):
+
     ## Model Comparison Sorting Table
     df_sort_tbl = time_values[['Dep', 'Suboperation', 'Activity_Group', 'Driver_1', 'Driver_2', 'Driver_3','Driver_4', 'Profile']].drop_duplicates()
     df_sort_tbl = df_sort_tbl.melt(id_vars=['Dep', 'Suboperation', 'Activity_Group'], var_name=['no'], value_name='Driver')
@@ -1059,3 +1060,9 @@ def Model_Summary_BI(time_values,quarter):
     df_hours['Quarter'] = quarter
     df_drivers['Quarter'] = quarter
     return df_sort_tbl, df_hours, df_drivers
+
+def AdditionalHoursProduce(file_name, opb_dep_df):
+    add_hrs_df = pd.read_excel(file_name,sheet_name='py_file')
+    opb_dep_df = opb_dep_df.merge(add_hrs_df,on=['Store','Dep'],how='left')
+    opb_dep_df['Additional_Hours'].fillna(0,inplace=True)
+    return opb_dep_df

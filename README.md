@@ -42,5 +42,5 @@ Clean/Transform/Combine some separate files to one pack. In here we can see whic
 ## Planograms_Combiner.py
 Clean/Transform/Combine 4 separate txt. files contain information about shelf capacity in every CE store
 
-## PalletCapacity_Customizer.py
+## PalletCapacity.py
 Every product has own equipment capacity (Pallet/Rollcage). In here I create average Pallet Capacity number for Productivity Measurement Group (PMG) which is used for (at least) half a year for all of the calculations I do in the Replenishment Model. The average Pallet Capacity number is calculated based on sold units in TPN level for chosen period (usualy ~30 weeks) 
