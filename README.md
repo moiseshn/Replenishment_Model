@@ -32,21 +32,21 @@ The required hours depends on many product features, like e.g:
 1. **Replenishment Model.py:**<br>
 The main script which is used to calculated demand of hours for Central European stores
 
-1. **Replenishment_Model_Functions.py:**<br>
+2. **Replenishment_Model_Functions.py:**<br>
 Contains all of the basic functions I needed to make any calculations in Product Number/Store level. I import those functions into the main model __**"Replenishment Model"**__
 
-1. **OpsDev_Combiner.py:**<br>
+3. **OpsDev_Combiner.py:**<br>
 Clean/Transform/Combine some separate files to one pack. In here we can see which product is displays in: 
 - Tray Pack, 
 - Unit, 
 - Full Pallet, 
 - Hook etc.
 
-1. **Planograms_Combiner.py**<br>
+4. **Planograms_Combiner.py**<br>
 Clean/Transform/Combine 4 separate txt. files contain information about shelf capacity in every CE store
 
-1. **PalletCapacity.py**<br>
+5. **PalletCapacity.py**<br>
 Every product has own equipment capacity (Pallet/Rollcage). In here I create average Pallet Capacity number for Productivity Measurement Group (PMG) which is used for (at least) half a year for all of the calculations I do in the Replenishment Model. The average Pallet Capacity number is calculated based on sold units in Product Number level for chosen period (usualy ~30 weeks) 
 
-1. **CaseCapacity.py**<br>
+6. **CaseCapacity.py**<br>
 Every product has own case capacity (items in case). In here I've created average Case Capacity number for Productivity Measurement Group (PMG) which is used for (at least) half a year for all of the calculations I do in the Replenishment Model. The average Case Capacity number is calculated based on sold units in Product Number level for chosen period (usualy ~30 weeks) 
