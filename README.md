@@ -1,6 +1,4 @@
 # Replenishment_Model
-The below description is temporary. I will prepare whole pack which helps to understand what my model can do, soon. 
-
 Please find more detailed description of this project in my **[portfolio](www.mariuszborycki.com)**
 
 ---
@@ -31,24 +29,24 @@ The required hours depends on many product features, like e.g:
 ---
 # Scripts Description for chosen (most important) files: 
 
-- **Replenishment Model.py:**<br>
+1. **Replenishment Model.py:**<br>
 The main script which is used to calculated demand of hours for Central European stores
 
-- **Replenishment_Model_Functions.py:**<br>
+1. **Replenishment_Model_Functions.py:**<br>
 Contains all of the basic functions I needed to make any calculations in Product Number/Store level. I import those functions into the main model __**"Replenishment Model"**__
 
-- **OpsDev_Combiner.py:**<br>
+1. **OpsDev_Combiner.py:**<br>
 Clean/Transform/Combine some separate files to one pack. In here we can see which product is displays in: 
 - Tray Pack, 
 - Unit, 
 - Full Pallet, 
 - Hook etc.
 
-- **Planograms_Combiner.py**<br>
+1. **Planograms_Combiner.py**<br>
 Clean/Transform/Combine 4 separate txt. files contain information about shelf capacity in every CE store
 
-- **PalletCapacity.py**<br>
+1. **PalletCapacity.py**<br>
 Every product has own equipment capacity (Pallet/Rollcage). In here I create average Pallet Capacity number for Productivity Measurement Group (PMG) which is used for (at least) half a year for all of the calculations I do in the Replenishment Model. The average Pallet Capacity number is calculated based on sold units in Product Number level for chosen period (usualy ~30 weeks) 
 
-- **CaseCapacity.py**<br>
+1. **CaseCapacity.py**<br>
 Every product has own case capacity (items in case). In here I've created average Case Capacity number for Productivity Measurement Group (PMG) which is used for (at least) half a year for all of the calculations I do in the Replenishment Model. The average Case Capacity number is calculated based on sold units in Product Number level for chosen period (usualy ~30 weeks) 
