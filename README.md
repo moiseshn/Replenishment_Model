@@ -1,5 +1,5 @@
 # Replenishment_Model
-Please find more detailed description of this project in my **[portfolio](www.mariuszborycki.com)**
+Please find more detailed description of this project in my **[portfolio](https://mariuszborycki.com/2021/5/16/replenishment-model/)**
 
 ---
 ## Background
